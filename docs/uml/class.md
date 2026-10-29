@@ -48,6 +48,30 @@ classDiagram
         +update_status(new_status) bool
     }
 
+    class SmartMatchingEngine {
+        +float WEIGHT_CATEGORY
+        +float WEIGHT_LOCATION
+        +float WEIGHT_DATE
+        +float WEIGHT_DESCRIPTION
+        +float DEFAULT_MATCH_THRESHOLD
+        +compute_category_score(cat_lost, cat_found) tuple
+        +compute_location_score(loc_lost, loc_found) tuple
+        +compute_date_score(date_lost, date_found) tuple
+        +compute_description_score(desc_lost, desc_found, title_lost, title_found) tuple
+        +calculate_match_details(lost_item, found_item) tuple
+        +find_matches_for_item(item, candidate_items, threshold) List~dict~
+    }
+
+    class ItemMatch {
+        +int id
+        +int lost_item_id
+        +int found_item_id
+        +float match_score
+        +string match_reason
+        +string status
+        +datetime created_at
+    }
+
     class DatabaseManager {
         +string db_path
         +get_db_connection() sqlite3.Connection
@@ -74,11 +98,14 @@ classDiagram
     User "1" --> "0..*" Item : "reports >"
     User "1" --> "0..*" Claim : "submits >"
     Item "1" --> "0..*" Claim : "receives >"
+    Item "1" --> "0..*" ItemMatch : "matched as lost/found >"
     
+    PortalController ..> SmartMatchingEngine : "evaluates candidates via"
     PortalController ..> DatabaseManager : "manages persistence via"
     PortalController ..> User : "authenticates & manages"
     PortalController ..> Item : "queries & creates"
     PortalController ..> Claim : "validates & updates"
+    SmartMatchingEngine ..> ItemMatch : "computes score & reasons for"
 ```
 
 ### Class Specifications & Multiplicities

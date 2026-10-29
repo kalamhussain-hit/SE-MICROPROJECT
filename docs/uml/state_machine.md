@@ -22,6 +22,7 @@ stateDiagram-v2
         CatalogPublished : Visible in public search catalog (/items)
         CatalogPublished : Open for ownership claims by other students
         CatalogPublished : Visible on portal home feed
+        CatalogPublished : Automatically evaluated by Smart Matching Engine against opposite-type items
     }
 
     Verified --> Returned : Claim approved & handover confirmed

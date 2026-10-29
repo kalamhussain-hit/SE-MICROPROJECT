@@ -29,6 +29,13 @@ flowchart TD
     
     AdminReview -->|Valid Report| VerifyReport[Update Item status = 'Verified']
     VerifyReport --> CatalogPublish[Publish Item to Public Campus Catalog]
+    VerifyReport --> MatchEngine[Execute Smart Matching Engine against verified candidate items]
+    MatchEngine --> MatchThresholdCheck{Match Score >= 50%?}
+    MatchThresholdCheck -->|Yes| SurfaceMatch[Surface Potential Match on Dashboard & Item Details with Explainable Breakdown]
+    MatchThresholdCheck -->|No| NoMatchInfo[No Potential Matches Found Banner]
+    SurfaceMatch --> DirectClaim[Student clicks 'Claim This Item' from Match Card]
+    DirectClaim --> EnterProof
+    NoMatchInfo --> OpenCatalog
 
     %% BRANCH 2: SEARCH & BROWSE
     SelectAction -->|Browse / Search| OpenCatalog[Navigate to Browse Items: /items]

@@ -313,3 +313,271 @@ def test_sql_injection_safety(client):
     assert response.status_code == 200
     # Should not cause error and should safely return 0 results
     assert b"No matching items found" in response.data
+
+
+# ---------------------------------------------------------------------------
+# Smart Lost-Found Matching Tests (Positive, Negative, Boundary, Functional, Integration)
+# ---------------------------------------------------------------------------
+def test_smart_matching_algorithm_identical_items():
+    """TC-SM-01 (Positive): Matching identical category, location, date, and description produces high score (>85%)."""
+    from matching import calculate_match_details
+    lost = {
+        "title": "Casio fx-991EX Scientific Calculator",
+        "category": "Electronics",
+        "location": "Library 2nd Floor Reading Hall",
+        "date": "2026-10-25",
+        "description": "Black Casio ClassWiz scientific calculator left on study table with white sticker."
+    }
+    found = {
+        "title": "Casio fx-991EX Scientific Calculator",
+        "category": "Electronics",
+        "location": "Library 2nd Floor Reading Hall",
+        "date": "2026-10-25",
+        "description": "Black Casio ClassWiz scientific calculator found on table in library reading hall."
+    }
+    score, breakdown, reason = calculate_match_details(lost, found)
+    assert score >= 85.0
+    assert breakdown["category"]["score"] == 100.0
+    assert breakdown["location"]["score"] == 100.0
+    assert breakdown["date"]["score"] == 100.0
+    assert breakdown["description"]["score"] > 60.0
+
+
+def test_smart_matching_algorithm_different_category():
+    """TC-SM-02 (Negative): Different categories severely penalize match score."""
+    from matching import calculate_match_details
+    lost = {
+        "title": "Calculus Textbook",
+        "category": "Books & Stationery",
+        "location": "Library 2nd Floor",
+        "date": "2026-10-25",
+        "description": "Thomas Calculus 14th edition hardbound book."
+    }
+    found = {
+        "title": "Bluetooth Speaker",
+        "category": "Electronics",
+        "location": "Library 2nd Floor",
+        "date": "2026-10-25",
+        "description": "JBL wireless speaker cylindrical shape."
+    }
+    score, breakdown, _ = calculate_match_details(lost, found)
+    assert breakdown["category"]["score"] == 0.0
+    # Should not pass default match threshold of 50.0
+    assert score < 50.0
+
+
+def test_smart_matching_boundary_threshold():
+    """TC-SM-03 (Boundary): Score filtering at and around 50.0% threshold."""
+    from matching import find_matches_for_item
+    item = {
+        "id": 100,
+        "item_type": "Lost",
+        "reported_by": 10,
+        "title": "Water Bottle",
+        "category": "Personal Belongings",
+        "location": "Campus Sports Ground",
+        "date": "2026-10-20",
+        "description": "Milton stainless steel silver bottle."
+    }
+    # Candidate with same category and same location and date
+    candidate_pass = {
+        "id": 101,
+        "item_type": "Found",
+        "reported_by": 11,
+        "title": "Steel Flask Bottle",
+        "category": "Personal Belongings",
+        "location": "Campus Sports Ground",
+        "date": "2026-10-20",
+        "description": "Silver stainless flask."
+    }
+    # Candidate with different category, different location, distant date
+    candidate_fail = {
+        "id": 102,
+        "item_type": "Found",
+        "reported_by": 12,
+        "title": "Umbrella",
+        "category": "Other",
+        "location": "Hostel Gate 3",
+        "date": "2026-08-01",
+        "description": "Black folding umbrella."
+    }
+    matches = find_matches_for_item(item, [candidate_pass, candidate_fail], threshold=50.0)
+    assert len(matches) == 1
+    assert matches[0]["candidate_item"]["id"] == 101
+    assert matches[0]["score"] >= 50.0
+
+
+def test_smart_matching_missing_and_invalid_data_handling():
+    """TC-SM-04 (Validation/Error Handling): Robust handling of empty fields and malformed dates without crashing."""
+    from matching import calculate_match_details
+    lost = {
+        "title": "",
+        "category": None,
+        "location": "",
+        "date": "invalid-date-format",
+        "description": ""
+    }
+    found = {
+        "title": None,
+        "category": "",
+        "location": None,
+        "date": None,
+        "description": None
+    }
+    score, breakdown, reason = calculate_match_details(lost, found)
+    assert score == 0.0
+    assert breakdown["category"]["score"] == 0.0
+    assert breakdown["location"]["score"] == 0.0
+    assert breakdown["date"]["score"] == 0.0
+    assert breakdown["description"]["score"] == 0.0
+    assert "Invalid Date Format" in reason or "Unknown Date" in reason
+
+
+def test_smart_matching_dashboard_display(client):
+    """TC-SM-05 (Functional): Student dashboard renders Smart Matches section with explainable breakdown."""
+    # Login as student rahul (id 2) who reported lost item #1 (College ID Card)
+    client.post("/login", data={"email": "rahul@campus.edu", "password": "Student@123"})
+    
+    # Create a matching Found report reported by priya (id 3)
+    conn = get_db_connection(app.config["DATABASE"])
+    cursor = conn.cursor()
+    cursor.execute(
+        """INSERT INTO items (title, description, category, location, date, item_type, reported_by, status)
+           VALUES ('College Identity Card', 'Found student ID card on blue lanyard in Library 2nd Floor reading hall.', 'Cards & ID', 'Library 2nd Floor Reading Hall', '2026-10-20', 'Found', 3, 'Verified')"""
+    )
+    conn.commit()
+    conn.close()
+
+    response = client.get("/dashboard")
+    assert response.status_code == 200
+    assert b"Smart Lost" in response.data or b"Smart Matches" in response.data
+    assert b"College Identity Card" in response.data
+    assert b"Match" in response.data
+    assert b"Category" in response.data
+    assert b"Location" in response.data
+
+
+def test_smart_matching_item_details_display(client):
+    """TC-SM-06 (Functional): Item details view displays potential matches of opposite type."""
+    # Login as student
+    client.post("/login", data={"email": "rahul@campus.edu", "password": "Student@123"})
+    
+    # Insert matching item
+    conn = get_db_connection(app.config["DATABASE"])
+    cursor = conn.cursor()
+    cursor.execute(
+        """INSERT INTO items (title, description, category, location, date, item_type, reported_by, status)
+           VALUES ('Lost Dell Adapter', 'Misplaced 65W Dell Type-C adapter in CS Lab.', 'Electronics', 'Computer Science Lab 3', '2026-10-21', 'Lost', 3, 'Verified')"""
+    )
+    conn.commit()
+    conn.close()
+
+    # View Item #2 (Found Laptop Charger in CS Lab 3)
+    response = client.get("/items/2")
+    assert response.status_code == 200
+    assert b"Potential Smart Matches" in response.data
+    assert b"Lost Dell Adapter" in response.data
+    assert b"Category" in response.data
+
+
+def test_smart_matching_admin_visibility(client):
+    """TC-SM-07 (Admin Integration): Admin control panel displays smart matches tab with cross-correlated items."""
+    # Login as admin
+    client.post("/login", data={"email": "admin@campus.edu", "password": "Admin@123"})
+    
+    # Add matching pair
+    conn = get_db_connection(app.config["DATABASE"])
+    cursor = conn.cursor()
+    cursor.execute(
+        """INSERT INTO items (title, description, category, location, date, item_type, reported_by, status)
+           VALUES ('Lost Scientific Calculator', 'Casio fx-991EX lost in Hall 2.', 'Electronics', 'Lecture Hall 2', '2026-10-22', 'Lost', 2, 'Verified')"""
+    )
+    cursor.execute(
+        """INSERT INTO items (title, description, category, location, date, item_type, reported_by, status)
+           VALUES ('Found Scientific Calculator', 'Casio fx-991EX found on bench in Hall 2.', 'Electronics', 'Lecture Hall 2', '2026-10-22', 'Found', 3, 'Verified')"""
+    )
+    conn.commit()
+    conn.close()
+
+    response = client.get("/admin")
+    assert response.status_code == 200
+    assert b"Smart Matches" in response.data
+    assert b"Automated Lost-Found Matches" in response.data
+    assert b"Scientific Calculator" in response.data
+
+
+def test_full_integration_flow_with_matching(client):
+    """TC-SM-08 (End-to-End Integration): Report Lost -> Admin Verify -> Report Found -> Admin Verify -> Match Generated -> Claim -> Admin Approve & Return."""
+    # Step 1: Student A (Rahul) reports Lost item
+    client.post("/login", data={"email": "rahul@campus.edu", "password": "Student@123"})
+    resp_report = client.post("/report", data={
+        "title": "Smart Watch",
+        "description": "Black silicone strap fitness tracker lost near basketball court.",
+        "category": "Electronics",
+        "location": "Basketball Court",
+        "date": "2026-10-24",
+        "item_type": "Lost"
+    }, follow_redirects=True)
+    assert resp_report.status_code == 200
+    client.get("/logout")
+
+    # Step 2: Admin verifies Student A's report
+    client.post("/login", data={"email": "admin@campus.edu", "password": "Admin@123"})
+    conn = get_db_connection(app.config["DATABASE"])
+    lost_id = conn.execute("SELECT id FROM items WHERE title = 'Smart Watch'").fetchone()["id"]
+    conn.close()
+    client.post(f"/admin/items/{lost_id}/status", data={"status": "Verified"}, follow_redirects=True)
+    client.get("/logout")
+
+    # Step 3: Student B (Priya) reports matching Found item
+    client.post("/login", data={"email": "priya@campus.edu", "password": "Student@123"})
+    client.post("/report", data={
+        "title": "Black Smart Watch",
+        "description": "Black fitness tracker with silicone band picked up near basketball court bleachers.",
+        "category": "Electronics",
+        "location": "Basketball Court",
+        "date": "2026-10-24",
+        "item_type": "Found"
+    }, follow_redirects=True)
+    client.get("/logout")
+
+    # Step 4: Admin verifies Student B's found item
+    client.post("/login", data={"email": "admin@campus.edu", "password": "Admin@123"})
+    conn = get_db_connection(app.config["DATABASE"])
+    found_id = conn.execute("SELECT id FROM items WHERE title = 'Black Smart Watch'").fetchone()["id"]
+    conn.close()
+    client.post(f"/admin/items/{found_id}/status", data={"status": "Verified"}, follow_redirects=True)
+    client.get("/logout")
+
+    # Step 5: Student A (Rahul) checks dashboard, sees Smart Match, and claims the Found item
+    client.post("/login", data={"email": "rahul@campus.edu", "password": "Student@123"})
+    dash_resp = client.get("/dashboard")
+    assert dash_resp.status_code == 200
+    assert b"Black Smart Watch" in dash_resp.data
+
+    # Step 6: Student A submits claim on found item
+    claim_resp = client.post(f"/claim/{found_id}", data={
+        "message": "This is my fitness tracker; has a small scratch on bottom left sensor and pin 1234."
+    }, follow_redirects=True)
+    assert claim_resp.status_code == 200
+    assert b"claim has been submitted successfully" in claim_resp.data
+    client.get("/logout")
+
+    # Step 7: Admin reviews claim, approves it, and marks item returned
+    client.post("/login", data={"email": "admin@campus.edu", "password": "Admin@123"})
+    conn = get_db_connection(app.config["DATABASE"])
+    claim_id = conn.execute("SELECT id FROM claims WHERE item_id = ? AND user_id = 2", (found_id,)).fetchone()["id"]
+    conn.close()
+    admin_action_resp = client.post(
+        f"/admin/claims/{claim_id}/status",
+        data={"status": "Approved", "mark_returned": "yes"},
+        follow_redirects=True
+    )
+    assert admin_action_resp.status_code == 200
+
+    # Step 8: Verify item is marked Returned in DB
+    conn = get_db_connection(app.config["DATABASE"])
+    item_status = conn.execute("SELECT status FROM items WHERE id = ?", (found_id,)).fetchone()["status"]
+    conn.close()
+    assert item_status == "Returned"
+

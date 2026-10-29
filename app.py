@@ -14,6 +14,11 @@ from flask import (
 )
 from werkzeug.security import generate_password_hash, check_password_hash
 from database.db import get_db_connection, init_db, seed_sample_data, DEFAULT_DB_PATH
+from matching import (
+    calculate_match_details,
+    find_matches_for_item,
+    DEFAULT_MATCH_THRESHOLD
+)
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "campus-lost-found-secret-key-se2026")
@@ -235,7 +240,7 @@ def logout():
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    """User dashboard displaying personal reported items, claims, and status."""
+    """User dashboard displaying personal reported items, claims, smart matches, and status."""
     user_id = session["user_id"]
     conn = get_db_connection(app.config["DATABASE"])
 
@@ -259,15 +264,51 @@ def dashboard():
         (user_id,)
     ).fetchall()
 
+    # Smart Lost-Found Matches for current user's reported items
+    # Fetch all verified items in catalog that can act as candidate matches
+    catalog_items = conn.execute(
+        """SELECT i.*, u.name AS reporter_name
+           FROM items i
+           JOIN users u ON i.reported_by = u.id
+           WHERE i.status = 'Verified'"""
+    ).fetchall()
+    catalog_dicts = [dict(it) for it in catalog_items]
+
+    user_matches = []
+    # For each item reported by user that is Verified or Pending, see if matching candidate exists
+    for my_item in my_items:
+        if my_item["status"] in ["Verified", "Pending"]:
+            my_item_dict = dict(my_item)
+            matches = find_matches_for_item(my_item_dict, catalog_dicts, threshold=DEFAULT_MATCH_THRESHOLD)
+            for m in matches:
+                # Add my_item reference for UI display
+                user_matches.append({
+                    "my_item": my_item_dict,
+                    "matched_item": m["candidate_item"],
+                    "score": m["score"],
+                    "breakdown": m["breakdown"],
+                    "reason": m["reason"]
+                })
+
+    # Sort user matches by score descending
+    user_matches.sort(key=lambda x: x["score"], reverse=True)
+
     stats = {
         "total_reported": len(my_items),
         "verified_reported": sum(1 for item in my_items if item["status"] == "Verified"),
         "total_claims": len(my_claims),
-        "approved_claims": sum(1 for claim in my_claims if claim["claim_status"] == "Approved")
+        "approved_claims": sum(1 for claim in my_claims if claim["claim_status"] == "Approved"),
+        "total_matches": len(user_matches)
     }
 
     conn.close()
-    return render_template("dashboard.html", my_items=my_items, my_claims=my_claims, stats=stats)
+    return render_template(
+        "dashboard.html",
+        my_items=my_items,
+        my_claims=my_claims,
+        user_matches=user_matches,
+        stats=stats
+    )
 
 
 @app.route("/report", methods=["GET", "POST"])
@@ -439,12 +480,29 @@ def item_details(item_id):
         if existing_claim:
             user_has_claimed = True
 
+    # Smart Matches for this item
+    # If this item is Lost, find matching Verified Found items.
+    # If this item is Found, find matching Verified Lost items.
+    matches = []
+    if item["status"] in ["Verified", "Pending"]:
+        opposite_type = "Found" if item["item_type"] == "Lost" else "Lost"
+        candidate_rows = conn.execute(
+            """SELECT i.*, u.name AS reporter_name
+               FROM items i
+               JOIN users u ON i.reported_by = u.id
+               WHERE i.item_type = ? AND i.status = 'Verified' AND i.id != ?""",
+            (opposite_type, item_id)
+        ).fetchall()
+        candidate_dicts = [dict(c) for c in candidate_rows]
+        matches = find_matches_for_item(dict(item), candidate_dicts, threshold=DEFAULT_MATCH_THRESHOLD)
+
     conn.close()
     return render_template(
         "item_details.html",
         item=item,
         claims=claims,
-        user_has_claimed=user_has_claimed
+        user_has_claimed=user_has_claimed,
+        potential_matches=matches
     )
 
 
@@ -548,6 +606,22 @@ def admin_dashboard():
         "SELECT id, name, email, role, created_at FROM users ORDER BY created_at DESC"
     ).fetchall()
 
+    # Precalculate global active matches between all Verified Lost and Found items for Admin monitoring
+    verified_lost = [dict(it) for it in items_list if it["item_type"] == "Lost" and it["status"] == "Verified"]
+    verified_found = [dict(it) for it in items_list if it["item_type"] == "Found" and it["status"] == "Verified"]
+    admin_matches = []
+    for l_item in verified_lost:
+        found_matches = find_matches_for_item(l_item, verified_found, threshold=DEFAULT_MATCH_THRESHOLD)
+        for m in found_matches:
+            admin_matches.append({
+                "lost_item": m["lost_item"],
+                "found_item": m["found_item"],
+                "score": m["score"],
+                "breakdown": m["breakdown"],
+                "reason": m["reason"]
+            })
+    admin_matches.sort(key=lambda x: x["score"], reverse=True)
+
     stats = {
         "total_items": len(items_list),
         "pending_items": sum(1 for i in items_list if i["status"] == "Pending"),
@@ -557,6 +631,7 @@ def admin_dashboard():
         "total_claims": len(claims_list),
         "pending_claims": sum(1 for c in claims_list if c["status"] == "Pending"),
         "approved_claims": sum(1 for c in claims_list if c["status"] == "Approved"),
+        "total_matches": len(admin_matches),
         "total_users": len(users_list)
     }
 
@@ -566,6 +641,7 @@ def admin_dashboard():
         items=items_list,
         claims=claims_list,
         users=users_list,
+        admin_matches=admin_matches,
         stats=stats
     )
 

@@ -60,6 +60,13 @@
                 <span class="metric-title">Registered Users</span>
             </div>
         </div>
+        <div class="metric-card">
+            <div class="metric-icon bg-teal">⚡</div>
+            <div class="metric-info">
+                <span class="metric-value">{{ stats.total_matches }}</span>
+                <span class="metric-title">Smart Matches</span>
+            </div>
+        </div>
     </div>
 
     <!-- Admin Tabs -->
@@ -69,6 +76,9 @@
         </button>
         <button class="tab-btn" onclick="switchAdminTab('claims-tab', this)">
             Ownership Claims ({{ claims|length }})
+        </button>
+        <button class="tab-btn" onclick="switchAdminTab('matches-tab', this)">
+            ⚡ Smart Matches ({{ admin_matches|length }})
         </button>
         <button class="tab-btn" onclick="switchAdminTab('users-tab', this)">
             Registered Accounts ({{ users|length }})
@@ -260,7 +270,71 @@
         {% endif %}
     </div>
 
-    <!-- TAB 3: Registered Accounts -->
+    <!-- TAB 3: Smart Matches Overview -->
+    <div id="matches-tab" class="admin-tab-content">
+        <div class="section-title-row">
+            <div>
+                <h2>⚡ Automated Lost-Found Matches</h2>
+                <p class="section-subtitle">Cross-correlated matches between verified lost belongings and verified found listings.</p>
+            </div>
+            <span class="section-count">{{ admin_matches|length }} match pair(s)</span>
+        </div>
+
+        {% if admin_matches %}
+            <div class="table-responsive">
+                <table class="data-table" id="adminMatchesTable">
+                    <thead>
+                        <tr>
+                            <th>Match Score</th>
+                            <th>Lost Item</th>
+                            <th>Found Item</th>
+                            <th>Attribute Reasons</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for match in admin_matches %}
+                            <tr>
+                                <td>
+                                    <div class="match-score-pill {% if match.score >= 80 %}score-high{% elif match.score >= 65 %}score-med{% else %}score-mod{% endif %}" style="margin: 0;">
+                                        <span class="score-num">{{ match.score }}%</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <strong>#{{ match.lost_item.id }} - {{ match.lost_item.title }}</strong><br>
+                                    <small class="text-muted">📍 {{ match.lost_item.location }} &bull; 📅 {{ match.lost_item.date }} &bull; {{ match.lost_item.category }}</small>
+                                </td>
+                                <td>
+                                    <strong>#{{ match.found_item.id }} - {{ match.found_item.title }}</strong><br>
+                                    <small class="text-muted">📍 {{ match.found_item.location }} &bull; 📅 {{ match.found_item.date }} &bull; {{ match.found_item.category }}</small>
+                                </td>
+                                <td>
+                                    <ul style="margin: 0; padding-left: 1.2rem; font-size: 0.85rem;">
+                                        <li><strong>Category:</strong> {{ match.breakdown.category.reason }} ({{ match.breakdown.category.score }}%)</li>
+                                        <li><strong>Location:</strong> {{ match.breakdown.location.reason }} ({{ match.breakdown.location.score }}%)</li>
+                                        <li><strong>Date:</strong> {{ match.breakdown.date.reason }} ({{ match.breakdown.date.score }}%)</li>
+                                        <li><strong>Description:</strong> {{ match.breakdown.description.reason }} ({{ match.breakdown.description.score }}%)</li>
+                                    </ul>
+                                </td>
+                                <td>
+                                    <div style="display: flex; gap: 0.4rem; flex-direction: column;">
+                                        <a href="{{ url_for('item_details', item_id=match.lost_item.id) }}" class="btn btn-outline-sm">View Lost</a>
+                                        <a href="{{ url_for('item_details', item_id=match.found_item.id) }}" class="btn btn-outline-sm">View Found</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state-box">
+                <p>No active cross-matches between verified lost and found items. Matches appear automatically once reports are verified.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- TAB 4: Registered Accounts -->
     <div id="users-tab" class="admin-tab-content">
         <div class="section-title-row">
             <h2>Registered Campus Accounts</h2>

@@ -9,46 +9,42 @@ sequenceDiagram
     actor Student as 👨‍🎓 Student
     participant UI as 🖥️ Web Interface (HTML/CSS/JS)
     participant Backend as ⚙️ Flask Backend (app.py)
+    participant Engine as ⚡ Matching Engine (matching.py)
     participant DB as 🗄️ SQLite Database (lost_found.db)
 
-    %% Step 1: Browse to item details
-    Student ->> UI: Clicks "View Details" on item #2 (Laptop Charger)
-    UI ->> Backend: GET /items/2
-    Backend ->> DB: SELECT * FROM items WHERE id = 2 (parameterized query)
-    DB -->> Backend: Returns Item row (status='Verified', reported_by=1)
-    Backend ->> DB: SELECT * FROM claims WHERE item_id=2 AND user_id=student_id
-    DB -->> Backend: Returns empty (no previous claim)
-    Backend -->> UI: Renders item_details.html with "Submit Ownership Claim" button
-    UI -->> Student: Displays item specifications & claim callout
+    %% Step 1: Student opens dashboard
+    Student ->> UI: Visits Dashboard (/dashboard)
+    UI ->> Backend: GET /dashboard (with session cookie)
+    Backend ->> DB: Query user's reported items (my_items)
+    DB -->> Backend: Returns reported items (e.g., Lost Item #1)
+    Backend ->> DB: Query verified opposite-type items (candidate found items)
+    DB -->> Backend: Returns verified found catalog items
+    
+    %% Step 2: Smart Matching Execution
+    Backend ->> Engine: find_matches_for_item(my_item, catalog_items, threshold=50.0)
+    loop For Each Candidate Found Item
+        Engine ->> Engine: calculate_match_details(Category 30%, Location 25%, Date 20%, Description 25%)
+    end
+    Engine -->> Backend: Returns ranked matches with scores and explainable breakdown
+    Backend -->> UI: Renders dashboard.html with "⚡ Smart Lost–Found Matches" section
+    UI -->> Student: Displays potential matches, 91.5% score pill, attribute reasons, and "Claim This Item" button
 
-    %% Step 2: Open claim form
-    Student ->> UI: Clicks "Submit Ownership Claim" button
-    UI ->> Backend: GET /claim/2 (with session cookie)
-    Backend ->> Backend: Verify @login_required & user_id != reported_by
+    %% Step 3: Student proceeds to claim from match
+    Student ->> UI: Clicks "Claim This Item" on matched Found Item #2
+    UI ->> Backend: GET /claim/2
     Backend ->> DB: SELECT * FROM items WHERE id = 2
     DB -->> Backend: Returns Item metadata
-    Backend -->> UI: Renders claim.html (item summary & proof textarea)
+    Backend -->> UI: Renders claim.html (pre-linked to matched item)
     UI -->> Student: Displays claim submission form
 
-    %% Step 3: Enter proof and submit
-    Student ->> UI: Enters proof message: "Dell 65W charger with blue velcro tie" & clicks Submit
-    UI ->> UI: Validates message length >= 10 chars (script.js)
+    %% Step 4: Submit ownership proof
+    Student ->> UI: Enters proof message: "Dell 65W charger with blue velcro tie" & submits
     UI ->> Backend: POST /claim/2 (form data: message=...)
-    
-    %% Step 4: Backend validation & persistence
     Backend ->> Backend: Check session & validate message >= 10 chars
-    Backend ->> DB: Check existing claims for item_id=2 and user_id
-    DB -->> Backend: No active claim found
     Backend ->> DB: INSERT INTO claims (item_id, user_id, message, status) VALUES (2, user_id, message, 'Pending')
     DB -->> Backend: Transaction committed (claim_id=3)
-    
-    %% Step 5: Response & redirection
-    Backend -->> UI: HTTP 302 Redirect to /dashboard with flash("Claim submitted successfully")
-    UI ->> Backend: GET /dashboard
-    Backend ->> DB: Query user items & user claims
-    DB -->> Backend: Returns updated user claims list
-    Backend -->> UI: Renders dashboard.html
-    UI -->> Student: Displays Student Dashboard showing Claim #CLM-3 with status "Pending"
+    Backend -->> UI: Redirects to /dashboard with flash("Claim submitted successfully")
+    UI -->> Student: Displays updated dashboard with Pending claim
 ```
 
 ### Key Architectural Highlights in Sequence

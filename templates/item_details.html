@@ -119,6 +119,70 @@
             {% endif %}
         </div>
 
+        <!-- Smart Lost-Found Matches Section -->
+        {% if potential_matches %}
+            <div class="details-matches-section" id="itemPotentialMatches">
+                <div class="section-title-row">
+                    <div>
+                        <h3>⚡ Potential Smart Matches ({{ potential_matches|length }})</h3>
+                        <p class="section-subtitle">Candidate items of opposite type matched using Category (30%), Location (25%), Date (20%), and Description (25%).</p>
+                    </div>
+                </div>
+
+                <div class="matches-grid">
+                    {% for m in potential_matches %}
+                        <div class="match-card">
+                            <div class="match-card-header">
+                                <div>
+                                    <span class="badge {% if m.candidate_item.item_type == 'Lost' %}badge-lost{% else %}badge-found{% endif %}">
+                                        {{ m.candidate_item.item_type }} Belonging
+                                    </span>
+                                    <h4 class="match-item-title">{{ m.candidate_item.title }}</h4>
+                                </div>
+                                <div class="match-score-pill {% if m.score >= 80 %}score-high{% elif m.score >= 65 %}score-med{% else %}score-mod{% endif %}">
+                                    <span class="score-num">{{ m.score }}%</span>
+                                    <span class="score-label">Match</span>
+                                </div>
+                            </div>
+
+                            <div class="match-breakdown-box">
+                                <div class="match-attr-row">
+                                    <span class="attr-name">Category ({{ m.breakdown.category.weight }}%)</span>
+                                    <span class="attr-val">✓ {{ m.breakdown.category.reason }} ({{ m.breakdown.category.score }}%)</span>
+                                </div>
+                                <div class="match-attr-row">
+                                    <span class="attr-name">Location ({{ m.breakdown.location.weight }}%)</span>
+                                    <span class="attr-val">✓ {{ m.breakdown.location.reason }} ({{ m.breakdown.location.score }}%)</span>
+                                </div>
+                                <div class="match-attr-row">
+                                    <span class="attr-name">Date Proximity ({{ m.breakdown.date.weight }}%)</span>
+                                    <span class="attr-val">✓ {{ m.breakdown.date.reason }} ({{ m.breakdown.date.score }}%)</span>
+                                </div>
+                                <div class="match-attr-row">
+                                    <span class="attr-name">Description ({{ m.breakdown.description.weight }}%)</span>
+                                    <span class="attr-val">✓ {{ m.breakdown.description.reason }} ({{ m.breakdown.description.score }}%)</span>
+                                </div>
+                            </div>
+
+                            <div class="match-card-footer">
+                                <span class="match-location-text">📍 {{ m.candidate_item.location }} &bull; 📅 {{ m.candidate_item.date }}</span>
+                                <div class="match-actions">
+                                    <a href="{{ url_for('item_details', item_id=m.candidate_item.id) }}" class="btn btn-outline-sm">
+                                        View Details
+                                    </a>
+                                    {% if m.candidate_item.item_type == 'Found' and m.candidate_item.status == 'Verified' and session.get('user_id') and session.get('user_id') != m.candidate_item.reported_by %}
+                                        <a href="{{ url_for('submit_claim', item_id=m.candidate_item.id) }}" class="btn btn-primary-sm">
+                                            Claim This
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
         <!-- Admin / Reporter Claims Section -->
         {% if claims %}
             <div class="item-claims-section">

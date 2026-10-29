@@ -40,9 +40,25 @@ CREATE TABLE IF NOT EXISTS claims (
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
+-- Matches Table (Smart Lost-Found Matching Cache / History)
+CREATE TABLE IF NOT EXISTS item_matches (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    lost_item_id INTEGER NOT NULL,
+    found_item_id INTEGER NOT NULL,
+    match_score REAL NOT NULL,
+    match_reason TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'Active' CHECK(status IN ('Active', 'Dismissed', 'Claimed')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (lost_item_id) REFERENCES items (id) ON DELETE CASCADE,
+    FOREIGN KEY (found_item_id) REFERENCES items (id) ON DELETE CASCADE,
+    UNIQUE(lost_item_id, found_item_id)
+);
+
 -- Indexes for efficient queries
 CREATE INDEX IF NOT EXISTS idx_items_status ON items(status);
 CREATE INDEX IF NOT EXISTS idx_items_type ON items(item_type);
 CREATE INDEX IF NOT EXISTS idx_items_category ON items(category);
 CREATE INDEX IF NOT EXISTS idx_claims_item ON claims(item_id);
 CREATE INDEX IF NOT EXISTS idx_claims_user ON claims(user_id);
+CREATE INDEX IF NOT EXISTS idx_matches_lost ON item_matches(lost_item_id);
+CREATE INDEX IF NOT EXISTS idx_matches_found ON item_matches(found_item_id);

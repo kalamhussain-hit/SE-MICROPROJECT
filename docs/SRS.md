@@ -89,6 +89,10 @@ graph TD
 | **FR-14** | Admin Report Verification | The system shall permit administrators to verify pending item reports, making them visible in the public campus catalog. | High |
 | **FR-15** | Admin Report Rejection | The system shall permit administrators to reject invalid, incomplete, or spam item reports. | High |
 | **FR-16** | Admin Claim Review & Return | The system shall allow administrators to approve or reject claims, and mark verified items as `Returned` upon successful handover. | High |
+| **FR-17** | Automated Smart Matching | The system shall automatically identify candidate matches between verified lost and found item reports using multi-attribute correlation (Category 30%, Location 25%, Date 20%, Description 25%). | High |
+| **FR-18** | Explainable Match Scoring & Ranking | The system shall compute a deterministic match percentage (0–100%) and render explainable attribute breakdowns to justify why each match was formed. | High |
+| **FR-19** | Smart Match Claim Integration | The system shall allow students to review matching items from their dashboard or item details and seamlessly initiate the existing proof-based ownership claim workflow. | High |
+| **FR-20** | Admin Smart Match Oversight | The system shall provide administrators with centralized visibility into cross-correlated lost-found match pairs within the administrative control center. | Medium |
 
 ---
 
@@ -176,6 +180,16 @@ erDiagram
         TEXT status
         TIMESTAMP created_at
     }
+
+    ITEM_MATCHES {
+        INTEGER id PK
+        INTEGER lost_item_id FK
+        INTEGER found_item_id FK
+        REAL match_score
+        TEXT match_reason
+        TEXT status
+        TIMESTAMP created_at
+    }
 ```
 
 ### Table 1: `users`
@@ -205,6 +219,15 @@ erDiagram
 - `message` (TEXT, NOT NULL): Proof details justifying ownership.
 - `status` (TEXT, NOT NULL, DEFAULT `'Pending'`, CHECK: `'Pending'`, `'Approved'`, `'Rejected'`).
 - `created_at` (TIMESTAMP, DEFAULT CURRENT_TIMESTAMP): Claim submission timestamp.
+
+### Table 4: `item_matches`
+- `id` (INTEGER, Primary Key, Autoincrement): Unique match record identifier.
+- `lost_item_id` (INTEGER, NOT NULL, Foreign Key $\rightarrow$ `items.id`): Associated lost item report.
+- `found_item_id` (INTEGER, NOT NULL, Foreign Key $\rightarrow$ `items.id`): Associated found item report.
+- `match_score` (REAL, NOT NULL): Multi-attribute calculated score percentage ($0.0 \le \text{score} \le 100.0$).
+- `match_reason` (TEXT, NOT NULL): Explainable breakdown summary across Category, Location, Date, and Description.
+- `status` (TEXT, NOT NULL, DEFAULT `'Active'`, CHECK: `'Active'`, `'Dismissed'`, `'Claimed'`).
+- `created_at` (TIMESTAMP, DEFAULT CURRENT_TIMESTAMP): Record creation timestamp.
 
 ---
 
@@ -244,6 +267,16 @@ erDiagram
   4. Administrator clicks "Approve & Return" to confirm ownership handover.
   5. System updates claim status to `Approved` and target item status to `Returned`.
 
+### Use Case UC-04: Smart Lost–Found Matching & Claim Initiation
+- **Primary Actor**: Student / Campus User
+- **Preconditions**: Student has an active reported Lost item; system contains verified Found items.
+- **Main Flow**:
+  1. System compares student's item against opposite catalog items across Category (30%), Location (25%), Date proximity (20%), and Description similarity (25%).
+  2. Potential matches meeting the threshold ($\ge 50\%$) are displayed on the Student Dashboard and Item Details view with ranked match score pills and explainable attribute justifications.
+  3. Student reviews match cards and clicks "Claim This Item".
+  4. System redirects student to the claim submission form (`/claim/<id>`) pre-linked to the matched item.
+  5. Student provides specific proof of ownership ($\ge 10$ characters) and submits for administrative adjudication.
+
 ---
 
 ## 8. Requirement Traceability Matrix (RTM)
@@ -266,6 +299,10 @@ erDiagram
 | **FR-14** | Admin Report Verification | `app.py` (`/admin/items/<id>/status`) | TC-12 | Implemented & Verified |
 | **FR-15** | Admin Report Rejection | `app.py` (`/admin/items/<id>/status`) | TC-13 | Implemented & Verified |
 | **FR-16** | Admin Claim Review & Return | `app.py` (`/admin/claims/<id>/status`) | TC-14, TC-15, TC-16 | Implemented & Verified |
+| **FR-17** | Automated Smart Matching | `matching.py`, `app.py` (`/dashboard`, `/items/<id>`) | TC-SM-01, TC-SM-02, TC-SM-03 | Implemented & Verified |
+| **FR-18** | Explainable Match Scoring & Ranking | `matching.py` (`calculate_match_details`) | TC-SM-01, TC-SM-04, TC-SM-05 | Implemented & Verified |
+| **FR-19** | Smart Match Claim Integration | `app.py` (`/claim/<id>`), `templates/dashboard.html` | TC-SM-05, TC-SM-06, TC-SM-08 | Implemented & Verified |
+| **FR-20** | Admin Smart Match Oversight | `app.py` (`/admin`), `templates/admin.html` | TC-SM-07, TC-SM-08 | Implemented & Verified |
 
 ---
 

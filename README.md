@@ -51,6 +51,63 @@ Without a centralized and structured system:
 
 ---
 
+## 🌟 Novelty: Smart Lost–Found Matching
+
+A key innovation in this portal is the **Smart Lost–Found Matching Engine** ([`matching.py`](file:///c:/Users/Kalam/OneDrive/Desktop/SE-Micrporject/matching.py)), which automatically correlates reported lost belongings with newly discovered found items in real-time.
+
+Instead of relying solely on exact keyword searches, the system performs **deterministic, explainable multi-attribute scoring** using calibrated weights:
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│               SMART LOST-FOUND MATCHING ATTRIBUTES                     │
+├──────────────────────────┬───────────┬─────────────────────────────────┤
+│ Attribute                │ Weight    │ Matching Technique              │
+├──────────────────────────┼───────────┼─────────────────────────────────┤
+│ 1. Category Similarity   │ 30% (0.30)│ Exact / Hierarchical Match      │
+│ 2. Location Similarity   │ 25% (0.25)│ Jaccard Token & Sequence Match  │
+│ 3. Date Proximity        │ 20% (0.20)│ Absolute Calendar Distance      │
+│ 4. Description Overlap   │ 25% (0.25)│ Keyword Intersection & Sequence │
+└──────────────────────────┴───────────┴─────────────────────────────────┘
+```
+
+### Explainable Match Calculation Workflow
+
+```mermaid
+flowchart TD
+    LostReport[Lost Item Report] --> CandidateDiscovery[Fetch Verified Found Items]
+    CandidateDiscovery --> CompCat[1. Compare Category - 30%]
+    CandidateDiscovery --> CompLoc[2. Compare Location - 25%]
+    CandidateDiscovery --> CompDate[3. Compare Date Proximity - 20%]
+    CandidateDiscovery --> CompDesc[4. Compare Description Overlap - 25%]
+    
+    CompCat --> ScoreCalc[Calculate Weighted Match Score: 0 - 100%]
+    CompLoc --> ScoreCalc
+    CompDate --> ScoreCalc
+    CompDesc --> ScoreCalc
+    
+    ScoreCalc --> ThresholdCheck{Score >= 50% Threshold?}
+    ThresholdCheck -->|Yes| SurfaceMatch[Surface Potential Match on Dashboard & Item Details with Explainable Breakdown]
+    ThresholdCheck -->|No| FilterOut[Filtered Out]
+    SurfaceMatch --> OneClickClaim[Student Reviews Breakdown & Initiates Claim]
+    OneClickClaim --> AdminReview[Admin Verifies Evidence & Authorizes Handover]
+```
+
+### Explainable Match Output
+For every match meeting the 50% threshold, the user is presented with a clear explanation:
+- **Match Score**: e.g., **91.5% Match**
+- **Category (30%)**: Exact Match (100%)
+- **Location (25%)**: High Location Match (100%)
+- **Date Proximity (20%)**: Same Day (100%)
+- **Description (25%)**: High Similarity (66.0%)
+
+### Seamless Integration with Claims & Administrative Moderation
+Smart Matching **enhances** rather than replaces human moderation:
+1. Only **Verified** items are cross-matched.
+2. Students can click **"Claim This Item"** directly from the match card to lodge an ownership claim with identifying proof.
+3. Campus Administrators retain final adjudication through proof evaluation before marking items `Returned`.
+
+---
+
 ## 🛠️ Technology Stack
 
 | Layer | Technology | Details |
@@ -166,12 +223,13 @@ graph TD
 ```
 SE-MICROPROJECT/
 ├── app.py                     # Main Flask application & route controllers
+├── matching.py                # Smart Lost–Found multi-attribute matching engine
 ├── requirements.txt           # Python package dependencies
 ├── README.md                  # Comprehensive project documentation
 ├── LICENSE                    # MIT open-source license
 │
 ├── database/
-│   ├── schema.sql             # Relational SQLite database schema DDL
+│   ├── schema.sql             # Relational SQLite database schema DDL with item_matches
 │   ├── db.py                  # Connection handlers, table creation & sample data seeding
 │   └── lost_found.db          # Active SQLite database file
 │
@@ -180,12 +238,12 @@ SE-MICROPROJECT/
 │   ├── index.html             # Landing page with hero, search & recent items
 │   ├── login.html             # Secure login form with demo credentials filler
 │   ├── register.html          # Student registration with validation
-│   ├── dashboard.html         # Personal student items & claims dashboard
+│   ├── dashboard.html         # Personal student dashboard with Smart Matches section
 │   ├── report.html            # Lost/Found item reporting form
 │   ├── items.html             # Filterable catalog with search & status tags
-│   ├── item_details.html      # Detailed item specifications & claim action
+│   ├── item_details.html      # Detailed item specs & potential opposite-type matches
 │   ├── claim.html             # Claim submission form with proof guidelines
-│   ├── admin.html             # Admin moderation panel with metrics & tabs
+│   ├── admin.html             # Admin moderation panel with metrics, tabs & match monitor
 │   └── error.html             # Custom HTTP 403, 404, 500 error display
 │
 ├── static/                    # Front-end static assets

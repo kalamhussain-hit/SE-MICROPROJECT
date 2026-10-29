@@ -26,6 +26,7 @@ flowchart LR
         UC8(["UC-08: View Item Details"])
         UC9(["UC-09: Submit Ownership Claim"])
         UC10(["UC-10: Track Personal Claims"])
+        UC18(["UC-18: View Smart Lost-Found Matches"])
 
         %% Admin Functions
         UC11(["UC-11: Access Admin Control Panel"])
@@ -35,6 +36,7 @@ flowchart LR
         UC15(["UC-15: Approve Claim & Mark Returned"])
         UC16(["UC-16: Reject Claim"])
         UC17(["UC-17: View User Directory"])
+        UC19(["UC-19: Monitor Automated Cross-Matches"])
     end
 
     %% Student Connections
@@ -48,6 +50,7 @@ flowchart LR
     Student --> UC8
     Student --> UC9
     Student --> UC10
+    Student --> UC18
 
     %% Admin Connections
     Admin --> UC2
@@ -59,9 +62,11 @@ flowchart LR
     Admin --> UC15
     Admin --> UC16
     Admin --> UC17
+    Admin --> UC19
 
     %% Include / Extend relationships
     UC9 -.->|includes| UC8
+    UC9 -.->|extends| UC18
     UC15 -.->|includes| UC14
     UC16 -.->|includes| UC14
 ```

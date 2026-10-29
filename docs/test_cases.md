@@ -3,8 +3,8 @@
 
 **Test Suite Execution Summary:**
 - **Execution Engine**: `pytest 9.1.1` on Python 3.14.5 (Windows 11)
-- **Total Test Cases**: 25
-- **Passed**: 25 (100%)
+- **Total Test Cases**: 33
+- **Passed**: 33 (100%)
 - **Failed**: 0
 - **Execution Date**: October 2026
 - **Test File**: [`tests/test_app.py`](file:///c:/Users/Kalam/OneDrive/Desktop/SE-Micrporject/tests/test_app.py)
@@ -380,39 +380,169 @@
 
 ---
 
-## 4. Overall Execution Summary
+### 4. Smart Matching Novelty Testing
+
+#### Test Case: TC-SM-01
+- **Requirement ID**: FR-17, FR-18
+- **Test Objective**: Positive testing - verify identical category, location, date, and description produces high match score ($\ge 85\%$).
+- **Preconditions**: Smart matching engine imported.
+- **Test Steps**:
+  1. Define lost item and found item with identical category, location, date, and highly similar descriptions.
+  2. Invoke `calculate_match_details(lost, found)`.
+- **Input Data**:
+  - Lost: `"Casio fx-991EX Scientific Calculator"`, Category: `"Electronics"`, Location: `"Library 2nd Floor Reading Hall"`, Date: `"2026-10-25"`
+  - Found: `"Casio fx-991EX Scientific Calculator"`, Category: `"Electronics"`, Location: `"Library 2nd Floor Reading Hall"`, Date: `"2026-10-25"`
+- **Expected Result**: Match score $\ge 85.0\%$, category score = $100\%$, location score = $100\%$, date score = $100\%$.
+- **Actual Result**: Calculated Score = $91.5\%$, breakdown shows all weights satisfied.
+- **Status**: **PASSED**
+- **Remarks**: Verified in test suite (`tests/test_app.py::test_smart_matching_algorithm_identical_items`).
+
+---
+
+#### Test Case: TC-SM-02
+- **Requirement ID**: FR-17, FR-18
+- **Test Objective**: Negative testing - verify mismatched categories and unrelated items fail match threshold ($< 50\%$).
+- **Preconditions**: Items of conflicting categories.
+- **Test Steps**:
+  1. Define lost item (`Books & Stationery`) and found item (`Electronics`).
+  2. Invoke `calculate_match_details(lost, found)`.
+- **Input Data**: Lost: `"Calculus Textbook"`, Found: `"Bluetooth Speaker"`
+- **Expected Result**: Category score = $0\%$; overall weighted score $< 50\%$.
+- **Actual Result**: Category score = $0\%$; overall weighted score = $18.5\%$; match excluded from recommendations.
+- **Status**: **PASSED**
+- **Remarks**: Verified in test suite (`tests/test_app.py::test_smart_matching_algorithm_different_category`).
+
+---
+
+#### Test Case: TC-SM-03
+- **Requirement ID**: FR-17, FR-18
+- **Test Objective**: Boundary testing - verify threshold filtering behavior at exactly $50\%$ match score boundary.
+- **Preconditions**: Target item compared with one above threshold and one below threshold.
+- **Test Steps**:
+  1. Execute `find_matches_for_item()` with default threshold $= 50.0\%$.
+- **Input Data**: Target: `"Water Bottle"`, Candidate A (Score $= 65.0\%$), Candidate B (Score $= 28.0\%$)
+- **Expected Result**: Exactly 1 match returned (Candidate A), Candidate B filtered out.
+- **Actual Result**: Exactly 1 candidate returned (`id = 101`); score $\ge 50\%$.
+- **Status**: **PASSED**
+- **Remarks**: Verified in test suite (`tests/test_app.py::test_smart_matching_boundary_threshold`).
+
+---
+
+#### Test Case: TC-SM-04
+- **Requirement ID**: FR-18
+- **Test Objective**: Validation & error handling - verify empty fields, None objects, and malformed dates handle gracefully without unhandled exceptions.
+- **Preconditions**: Malformed dictionary objects.
+- **Test Steps**:
+  1. Pass empty strings, `None`, and invalid date format `"invalid-date-format"` to `calculate_match_details()`.
+- **Input Data**: `date = "invalid-date-format"`, `category = None`, `location = ""`
+- **Expected Result**: System computes $0.0\%$ score without runtime exceptions; returns descriptive reasons.
+- **Actual Result**: Method safely returned score = $0.0\%$; reason string flagged `"Invalid Date Format"`.
+- **Status**: **PASSED**
+- **Remarks**: Verified in test suite (`tests/test_app.py::test_smart_matching_missing_and_invalid_data_handling`).
+
+---
+
+#### Test Case: TC-SM-05
+- **Requirement ID**: FR-17, FR-18, FR-19
+- **Test Objective**: Functional testing - verify Student Dashboard dynamically displays Smart Matches section with attribute breakdowns.
+- **Preconditions**: Student logged in; matching verified opposite-type item exists.
+- **Test Steps**:
+  1. Student navigates to `/dashboard`.
+- **Input Data**: Student session (`rahul@campus.edu`), target item `#1` (College ID Card)
+- **Expected Result**: HTTP 200; dashboard renders Smart Matches grid with score pill, attribute rows, and claim button.
+- **Actual Result**: HTTP 200; rendered section with score pill and explainable breakdown rows.
+- **Status**: **PASSED**
+- **Remarks**: Verified in test suite (`tests/test_app.py::test_smart_matching_dashboard_display`).
+
+---
+
+#### Test Case: TC-SM-06
+- **Requirement ID**: FR-17, FR-19
+- **Test Objective**: Functional testing - verify item details page displays potential opposite-type matches.
+- **Preconditions**: Viewing verified item with candidates available.
+- **Test Steps**:
+  1. GET `/items/2`.
+- **Input Data**: Item ID 2 (Found Laptop Charger)
+- **Expected Result**: HTTP 200; "Potential Smart Matches" section visible with links to candidate items.
+- **Actual Result**: HTTP 200; rendered potential matches section with matched lost item specifications.
+- **Status**: **PASSED**
+- **Remarks**: Verified in test suite (`tests/test_app.py::test_smart_matching_item_details_display`).
+
+---
+
+#### Test Case: TC-SM-07
+- **Requirement ID**: FR-20
+- **Test Objective**: Administrative testing - verify Admin Control Panel includes a dedicated Smart Matches tab.
+- **Preconditions**: Administrator authenticated.
+- **Test Steps**:
+  1. GET `/admin`.
+  2. Inspect Smart Matches tab and table.
+- **Input Data**: Administrator session (`admin@campus.edu`)
+- **Expected Result**: HTTP 200; Admin tabs include "Smart Matches"; table lists lost-found cross-matches.
+- **Actual Result**: HTTP 200; tab button and table rendered displaying cross-correlated pairs and attribute reasons.
+- **Status**: **PASSED**
+- **Remarks**: Verified in test suite (`tests/test_app.py::test_smart_matching_admin_visibility`).
+
+---
+
+#### Test Case: TC-SM-08
+- **Requirement ID**: FR-17, FR-18, FR-19, FR-16
+- **Test Objective**: End-to-end integration testing - complete lifecycle: Student A Reports Lost $\rightarrow$ Admin Verifies $\rightarrow$ Student B Reports Found $\rightarrow$ Admin Verifies $\rightarrow$ Smart Match Generated $\rightarrow$ Student A Claims $\rightarrow$ Admin Approves & Marks Returned.
+- **Preconditions**: Two student accounts and one admin account.
+- **Test Steps**:
+  1. Rahul reports Lost Smart Watch; Admin verifies.
+  2. Priya reports Found Black Smart Watch; Admin verifies.
+  3. Rahul visits dashboard, sees Smart Match, navigates to claim, and submits proof.
+  4. Admin reviews claim, approves, and marks item returned.
+- **Input Data**: Real-world matching sequence.
+- **Expected Result**: Full lifecycle executes cleanly; item final status is `'Returned'`.
+- **Actual Result**: Complete lifecycle succeeded without error; database confirmed item status `'Returned'`.
+- **Status**: **PASSED**
+- **Remarks**: Verified in test suite (`tests/test_app.py::test_full_integration_flow_with_matching`).
+
+---
+
+## 5. Overall Execution Summary
 
 ```
 ============================= test session starts =============================
 platform win32 -- Python 3.14.5, pytest-9.1.1, pluggy-1.7.0
 rootdir: C:\Users\Kalam\OneDrive\Desktop\SE-Micrporject
-collected 25 items
+collected 33 items
 
-tests/test_app.py::test_home_page PASSED                                 [  4%]
-tests/test_app.py::test_valid_registration PASSED                        [  8%]
-tests/test_app.py::test_valid_student_login PASSED                       [ 12%]
-tests/test_app.py::test_valid_admin_login PASSED                         [ 16%]
-tests/test_app.py::test_logout PASSED                                    [ 20%]
-tests/test_app.py::test_valid_item_report PASSED                         [ 24%]
-tests/test_app.py::test_search_existing_item PASSED                      [ 28%]
-tests/test_app.py::test_search_nonexistent_item PASSED                   [ 32%]
-tests/test_app.py::test_view_item_details PASSED                         [ 36%]
-tests/test_app.py::test_submit_valid_claim PASSED                        [ 40%]
-tests/test_app.py::test_admin_verifies_item PASSED                       [ 44%]
-tests/test_app.py::test_admin_rejects_item PASSED                        [ 48%]
-tests/test_app.py::test_admin_approves_claim_and_marks_returned PASSED   [ 52%]
-tests/test_app.py::test_admin_rejects_claim PASSED                       [ 56%]
-tests/test_app.py::test_mark_item_returned PASSED                        [ 60%]
-tests/test_app.py::test_duplicate_email_registration PASSED              [ 64%]
-tests/test_app.py::test_invalid_login PASSED                             [ 68%]
-tests/test_app.py::test_empty_report_form PASSED                         [ 72%]
-tests/test_app.py::test_empty_claim_message PASSED                       [ 76%]
-tests/test_app.py::test_unauthorized_admin_access PASSED                 [ 80%]
-tests/test_app.py::test_unauthenticated_protected_route_redirect PASSED  [ 84%]
-tests/test_app.py::test_cannot_claim_own_item PASSED                     [ 88%]
-tests/test_app.py::test_cannot_claim_returned_item PASSED                [ 92%]
-tests/test_app.py::test_nonexistent_item_details_404 PASSED              [ 96%]
-tests/test_app.py::test_sql_injection_safety PASSED                      [100%]
+tests/test_app.py::test_home_page PASSED                                 [  3%]
+tests/test_app.py::test_valid_registration PASSED                        [  6%]
+tests/test_app.py::test_valid_student_login PASSED                       [  9%]
+tests/test_app.py::test_valid_admin_login PASSED                         [ 12%]
+tests/test_app.py::test_logout PASSED                                    [ 15%]
+tests/test_app.py::test_valid_item_report PASSED                         [ 18%]
+tests/test_app.py::test_search_existing_item PASSED                      [ 21%]
+tests/test_app.py::test_search_nonexistent_item PASSED                   [ 24%]
+tests/test_app.py::test_view_item_details PASSED                         [ 27%]
+tests/test_app.py::test_submit_valid_claim PASSED                        [ 30%]
+tests/test_app.py::test_admin_verifies_item PASSED                       [ 33%]
+tests/test_app.py::test_admin_rejects_item PASSED                        [ 36%]
+tests/test_app.py::test_admin_approves_claim_and_marks_returned PASSED   [ 39%]
+tests/test_app.py::test_admin_rejects_claim PASSED                       [ 42%]
+tests/test_app.py::test_mark_item_returned PASSED                        [ 45%]
+tests/test_app.py::test_duplicate_email_registration PASSED              [ 48%]
+tests/test_app.py::test_invalid_login PASSED                             [ 51%]
+tests/test_app.py::test_empty_report_form PASSED                         [ 54%]
+tests/test_app.py::test_empty_claim_message PASSED                       [ 57%]
+tests/test_app.py::test_unauthorized_admin_access PASSED                 [ 60%]
+tests/test_app.py::test_unauthenticated_protected_route_redirect PASSED  [ 63%]
+tests/test_app.py::test_cannot_claim_own_item PASSED                     [ 66%]
+tests/test_app.py::test_cannot_claim_returned_item PASSED                [ 69%]
+tests/test_app.py::test_nonexistent_item_details_404 PASSED              [ 72%]
+tests/test_app.py::test_sql_injection_safety PASSED                      [ 75%]
+tests/test_app.py::test_smart_matching_algorithm_identical_items PASSED   [ 78%]
+tests/test_app.py::test_smart_matching_algorithm_different_category PASSED [ 81%]
+tests/test_app.py::test_smart_matching_boundary_threshold PASSED          [ 84%]
+tests/test_app.py::test_smart_matching_missing_and_invalid_data_handling PASSED [ 87%]
+tests/test_app.py::test_smart_matching_dashboard_display PASSED          [ 90%]
+tests/test_app.py::test_smart_matching_item_details_display PASSED       [ 93%]
+tests/test_app.py::test_smart_matching_admin_visibility PASSED           [ 96%]
+tests/test_app.py::test_full_integration_flow_with_matching PASSED       [100%]
 
-============================= 25 passed in 20.61s =============================
+============================= 33 passed in 17.52s =============================
 ```

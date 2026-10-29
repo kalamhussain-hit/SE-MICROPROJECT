@@ -49,6 +49,84 @@
                 <span class="metric-title">Approved Claims</span>
             </div>
         </div>
+        <div class="metric-card">
+            <div class="metric-icon bg-teal">⚡</div>
+            <div class="metric-info">
+                <span class="metric-value">{{ stats.total_matches }}</span>
+                <span class="metric-title">Smart Matches</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section: Smart Lost-Found Matches -->
+    <div class="dashboard-section smart-matches-section" id="smartMatchesSection">
+        <div class="section-title-row">
+            <div>
+                <h2>⚡ Smart Lost–Found Matches</h2>
+                <p class="section-subtitle">Automated multi-attribute matching between your reported items and campus catalog listings.</p>
+            </div>
+            <span class="section-count">{{ user_matches|length }} potential match(es)</span>
+        </div>
+
+        {% if user_matches %}
+            <div class="matches-grid">
+                {% for match in user_matches %}
+                    <div class="match-card">
+                        <div class="match-card-header">
+                            <div>
+                                <span class="badge {% if match.matched_item.item_type == 'Lost' %}badge-lost{% else %}badge-found{% endif %}">
+                                    {{ match.matched_item.item_type }} Match
+                                </span>
+                                <h3 class="match-item-title">{{ match.matched_item.title }}</h3>
+                                <p class="match-for-text">Matching your {{ match.my_item.item_type|lower }}: <strong>{{ match.my_item.title }}</strong></p>
+                            </div>
+                            <div class="match-score-pill {% if match.score >= 80 %}score-high{% elif match.score >= 65 %}score-med{% else %}score-mod{% endif %}">
+                                <span class="score-num">{{ match.score }}%</span>
+                                <span class="score-label">Match</span>
+                            </div>
+                        </div>
+
+                        <!-- Match Breakdown -->
+                        <div class="match-breakdown-box">
+                            <div class="match-attr-row">
+                                <span class="attr-name">Category ({{ match.breakdown.category.weight }}%)</span>
+                                <span class="attr-val">✓ {{ match.breakdown.category.reason }} ({{ match.breakdown.category.score }}%)</span>
+                            </div>
+                            <div class="match-attr-row">
+                                <span class="attr-name">Location ({{ match.breakdown.location.weight }}%)</span>
+                                <span class="attr-val">✓ {{ match.breakdown.location.reason }} ({{ match.breakdown.location.score }}%)</span>
+                            </div>
+                            <div class="match-attr-row">
+                                <span class="attr-name">Date Proximity ({{ match.breakdown.date.weight }}%)</span>
+                                <span class="attr-val">✓ {{ match.breakdown.date.reason }} ({{ match.breakdown.date.score }}%)</span>
+                            </div>
+                            <div class="match-attr-row">
+                                <span class="attr-name">Description ({{ match.breakdown.description.weight }}%)</span>
+                                <span class="attr-val">✓ {{ match.breakdown.description.reason }} ({{ match.breakdown.description.score }}%)</span>
+                            </div>
+                        </div>
+
+                        <div class="match-card-footer">
+                            <span class="match-location-text">📍 {{ match.matched_item.location }} &bull; 📅 {{ match.matched_item.date }}</span>
+                            <div class="match-actions">
+                                <a href="{{ url_for('item_details', item_id=match.matched_item.id) }}" class="btn btn-outline-sm">
+                                    View Item
+                                </a>
+                                {% if match.matched_item.item_type == 'Found' and match.matched_item.status == 'Verified' and match.matched_item.reported_by != session.get('user_id') %}
+                                    <a href="{{ url_for('submit_claim', item_id=match.matched_item.id) }}" class="btn btn-primary-sm">
+                                        Claim This Item
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state-box">
+                <p>No potential smart matches found yet. The system continuously evaluates verified lost and found reports across Category, Location, Date, and Description similarity.</p>
+            </div>
+        {% endif %}
     </div>
 
     <!-- Section 1: My Reported Items -->

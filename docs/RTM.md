@@ -25,6 +25,10 @@ The Requirement Traceability Matrix (RTM) tracks the lifecycle of every specifie
 | **FR-14** | Admin Verify Item Report | Moderation Controller | [`app.py`](file:///c:/Users/Kalam/OneDrive/Desktop/SE-Micrporject/app.py) (`/admin/items/<id>/status`) | **TC-12** | **PASSED** (100%) |
 | **FR-15** | Admin Reject Invalid Item Report | Moderation Controller | [`app.py`](file:///c:/Users/Kalam/OneDrive/Desktop/SE-Micrporject/app.py) (`/admin/items/<id>/status`) | **TC-13** | **PASSED** (100%) |
 | **FR-16** | Admin Claim Review & Return Marking | Claims Resolution | [`app.py`](file:///c:/Users/Kalam/OneDrive/Desktop/SE-Micrporject/app.py) (`/admin/claims/<id>/status`) | **TC-14, TC-15, TC-16** | **PASSED** (100%) |
+| **FR-17** | Automated Smart Lost-Found Candidate Correlation | Smart Matching Engine | [`matching.py`](file:///c:/Users/Kalam/OneDrive/Desktop/SE-Micrporject/matching.py) (`find_matches_for_item`) | **TC-SM-01, TC-SM-02, TC-SM-03** | **PASSED** (100%) |
+| **FR-18** | Explainable Weighted Multi-Attribute Match Scoring | Smart Matching Engine | [`matching.py`](file:///c:/Users/Kalam/OneDrive/Desktop/SE-Micrporject/matching.py) (`calculate_match_details`) | **TC-SM-01, TC-SM-04, TC-SM-05** | **PASSED** (100%) |
+| **FR-19** | Smart Match Presentation & Claim Integration | Student Portal & Claims | [`app.py`](file:///c:/Users/Kalam/OneDrive/Desktop/SE-Micrporject/app.py) (`/dashboard`, `/items/<id>`) | **TC-SM-05, TC-SM-06, TC-SM-08** | **PASSED** (100%) |
+| **FR-20** | Administrative Smart Match Oversight | Administrative Center | [`app.py`](file:///c:/Users/Kalam/OneDrive/Desktop/SE-Micrporject/app.py) (`/admin`) | **TC-SM-07, TC-SM-08** | **PASSED** (100%) |
 
 ---
 
@@ -40,7 +44,7 @@ The Requirement Traceability Matrix (RTM) tracks the lifecycle of every specifie
 ---
 
 ## 3. Coverage Analysis
-- **Total Functional Requirements Tracked**: 16 / 16 (100%)
+- **Total Functional Requirements Tracked**: 20 / 20 (100%)
 - **Total Non-Functional Requirements Tracked**: 4 / 4 (100%)
-- **Total Associated Test Cases**: 25 / 25 Passing (100%)
+- **Total Associated Test Cases**: 33 / 33 Passing (100%)
 - **Defects Found / Open**: 0
