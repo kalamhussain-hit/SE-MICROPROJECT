@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Smart Lost & Found Portal{% endblock %}
+
+{% block content %}
+<div class="auth-page-wrapper">
+    <div class="auth-card">
+        <div class="auth-header">
+            <span class="auth-icon">📝</span>
+            <h2>Student Registration</h2>
+            <p>Create your verified campus lost &amp; found account</p>
+        </div>
+
+        <form action="{{ url_for('register') }}" method="POST" class="auth-form" id="registerForm">
+            <div class="form-group">
+                <label for="reg-name">Full Name</label>
+                <div class="input-with-icon">
+                    <span class="input-icon">👤</span>
+                    <input type="text" id="reg-name" name="name" value="{{ name or '' }}" placeholder="e.g. John Doe" minlength="2" required autofocus>
+                </div>
+                <small class="form-hint">Enter your official campus-registered name</small>
+            </div>
+
+            <div class="form-group">
+                <label for="reg-email">Campus Email Address</label>
+                <div class="input-with-icon">
+                    <span class="input-icon">✉️</span>
+                    <input type="email" id="reg-email" name="email" value="{{ email or '' }}" placeholder="student@campus.edu" required>
+                </div>
+                <small class="form-hint">Use a valid email address for notification updates</small>
+            </div>
+
+            <div class="form-group">
+                <label for="reg-password">Password</label>
+                <div class="input-with-icon">
+                    <span class="input-icon">🔒</span>
+                    <input type="password" id="reg-password" name="password" placeholder="At least 6 characters" minlength="6" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="reg-confirm-password">Confirm Password</label>
+                <div class="input-with-icon">
+                    <span class="input-icon">🔒</span>
+                    <input type="password" id="reg-confirm-password" name="confirm_password" placeholder="Re-enter password" minlength="6" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block btn-lg" id="register-submit-btn">
+                Complete Registration
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Already registered on the portal? <a href="{{ url_for('login') }}">Sign In here</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

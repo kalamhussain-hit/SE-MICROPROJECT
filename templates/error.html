@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}{{ error_title or 'Notice' }} - Smart Lost & Found Portal{% endblock %}
+
+{% block content %}
+<div class="error-page-wrapper">
+    <div class="error-card">
+        <div class="error-code-badge">{{ error_code or 'Notice' }}</div>
+        <h1>{{ error_title or 'Something Went Wrong' }}</h1>
+        <p class="error-message">
+            {{ error_message or 'The requested resource could not be found or an unexpected error occurred.' }}
+        </p>
+
+        <div class="error-actions">
+            <a href="{{ url_for('index') }}" class="btn btn-primary">
+                Return to Campus Home
+            </a>
+            <a href="{{ url_for('items') }}" class="btn btn-outline">
+                Browse Items
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

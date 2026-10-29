@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Report Lost / Found Item - Smart Lost & Found Portal{% endblock %}
+
+{% block content %}
+<div class="form-page-wrapper">
+    <div class="form-card">
+        <div class="form-card-header">
+            <span class="form-badge">Campus Notice</span>
+            <h2>Report a Lost or Found Belonging</h2>
+            <p>Fill out the form below. Once submitted, campus administration will review and verify your report for the public catalog.</p>
+        </div>
+
+        <form action="{{ url_for('report_item') }}" method="POST" class="report-form" id="reportItemForm">
+            <!-- Item Type Selection -->
+            <div class="form-group">
+                <label class="form-label-highlight">What would you like to report?</label>
+                <div class="type-selector-group">
+                    <label class="type-option {% if item_type == 'Lost' or not item_type %}selected{% endif %}">
+                        <input type="radio" name="item_type" value="Lost" {% if item_type == 'Lost' or not item_type %}checked{% endif %} required>
+                        <span class="type-title">🔴 I LOST an Item</span>
+                        <span class="type-desc">You are missing a personal belonging on campus</span>
+                    </label>
+                    <label class="type-option {% if item_type == 'Found' %}selected{% endif %}">
+                        <input type="radio" name="item_type" value="Found" {% if item_type == 'Found' %}checked{% endif %} required>
+                        <span class="type-title">🟢 I FOUND an Item</span>
+                        <span class="type-desc">You discovered an unattended belonging on campus</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Item Title -->
+            <div class="form-group">
+                <label for="item-title">Item Title / Name *</label>
+                <input type="text" id="item-title" name="title" value="{{ title or '' }}" placeholder="e.g. Student ID Card, Dell 65W Laptop Charger, Water Bottle" minlength="3" required>
+                <small class="form-hint">A concise name summarizing the belonging.</small>
+            </div>
+
+            <div class="form-row">
+                <!-- Category -->
+                <div class="form-group col-half">
+                    <label for="item-category">Category *</label>
+                    <select id="item-category" name="category" required>
+                        <option value="" disabled {% if not category %}selected{% endif %}>Select category...</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat }}" {% if category == cat %}selected{% endif %}>{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Date -->
+                <div class="form-group col-half">
+                    <label for="item-date">Date Lost / Found *</label>
+                    <input type="date" id="item-date" name="date" value="{{ date or '' }}" required>
+                    <small class="form-hint">When was the item misplaced or located?</small>
+                </div>
+            </div>
+
+            <!-- Location -->
+            <div class="form-group">
+                <label for="item-location">Campus Location *</label>
+                <input type="text" id="item-location" name="location" value="{{ location or '' }}" placeholder="e.g. Computer Science Lab 3, Library 2nd Floor, Main Cafeteria" minlength="3" required>
+                <small class="form-hint">Specify the building, room, or landmark as accurately as possible.</small>
+            </div>
+
+            <!-- Description -->
+            <div class="form-group">
+                <label for="item-description">Detailed Description *</label>
+                <textarea id="item-description" name="description" rows="5" placeholder="Include identifying details such as brand, color, stickers, model, contents, condition, or special markings (minimum 10 characters)..." minlength="10" required>{{ description or '' }}</textarea>
+                <small class="form-hint">Detailed descriptions help administrators verify claims accurately.</small>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary btn-lg" id="submit-report-btn">
+                    Submit Report for Verification
+                </button>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-outline btn-lg">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Highlight active type selector card on change
+document.querySelectorAll('input[name="item_type"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        document.querySelectorAll('.type-option').forEach(el => el.classList.remove('selected'));
+        if (this.checked) {
+            this.closest('.type-option').classList.add('selected');
+        }
+    });
+});
+
+// Set max date to today
+const dateInput = document.getElementById('item-date');
+if (dateInput) {
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.max = today;
+    if (!dateInput.value) {
+        dateInput.value = today;
+    }
+}
+</script>
+{% endblock %}

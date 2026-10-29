@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Claim Belonging: {{ item.title }} - Smart Lost & Found Portal{% endblock %}
+
+{% block content %}
+<div class="form-page-wrapper">
+    <div class="breadcrumb-nav">
+        <a href="{{ url_for('item_details', item_id=item.id) }}">&larr; Return to Item Details</a>
+    </div>
+
+    <div class="form-card">
+        <div class="form-card-header">
+            <span class="form-badge">Ownership Verification</span>
+            <h2>Submit Ownership Claim</h2>
+            <p>You are submitting a claim for the cataloged item shown below.</p>
+        </div>
+
+        <!-- Target Item Summary -->
+        <div class="item-summary-card">
+            <div class="summary-top">
+                <span class="badge {% if item.item_type == 'Lost' %}badge-lost{% else %}badge-found{% endif %}">
+                    {{ item.item_type }}
+                </span>
+                <span class="badge badge-category">{{ item.category }}</span>
+                <span class="item-id-badge">Item #{{ item.id }}</span>
+            </div>
+            <h3 class="summary-title">{{ item.title }}</h3>
+            <div class="summary-meta-row">
+                <span>📍 Located: <strong>{{ item.location }}</strong></span>
+                <span>📅 Date: <strong>{{ item.date }}</strong></span>
+            </div>
+        </div>
+
+        <!-- Claim Guidance Alert -->
+        <div class="guidance-box">
+            <span class="guidance-icon">💡</span>
+            <div class="guidance-text">
+                <h4>Tips for Rapid Claim Approval</h4>
+                <p>
+                    Campus administrators verify ownership before authorizing returns. Please include details that prove your ownership—such as unique scratches, serial numbers, screen locks, personal tags, or exact contents inside.
+                </p>
+            </div>
+        </div>
+
+        <!-- Claim Form -->
+        <form action="{{ url_for('submit_claim', item_id=item.id) }}" method="POST" class="claim-form" id="claimForm">
+            <div class="form-group">
+                <label for="claim-message">Detailed Proof of Ownership *</label>
+                <textarea id="claim-message" name="message" rows="6" placeholder="Provide distinct characteristics or evidence verifying you are the rightful owner (e.g., specific brand marking, passcode hint, unique stickers, stickers on reverse, or items inside)..." minlength="10" required>{{ message or '' }}</textarea>
+                <small class="form-hint">Minimum 10 characters. Fraudulent claims may result in disciplinary action.</small>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary btn-lg" id="submit-claim-btn">
+                    Submit Verification Claim
+                </button>
+                <a href="{{ url_for('item_details', item_id=item.id) }}" class="btn btn-outline btn-lg">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

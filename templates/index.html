@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Smart Lost & Found Portal{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="hero-container">
+        <div class="hero-content">
+            <span class="hero-pill">Official Campus Utility</span>
+            <h1 class="hero-title">Misplaced something on campus? We’ve got you covered.</h1>
+            <p class="hero-subtitle">
+                A centralized, secure portal for students, faculty, and campus staff to report lost personal belongings, catalog found items, and safely verify ownership claims.
+            </p>
+
+            <!-- Quick Search Bar -->
+            <form action="{{ url_for('items') }}" method="GET" class="hero-search-box">
+                <div class="search-input-group">
+                    <span class="search-icon">🔎</span>
+                    <input type="text" name="q" placeholder="Search by item name, location, or keyword (e.g. ID card, charger)..." required>
+                    <button type="submit" class="btn btn-primary" id="hero-search-submit">Search Items</button>
+                </div>
+            </form>
+
+            <!-- Quick Action Links -->
+            <div class="hero-buttons">
+                <a href="{{ url_for('report_item') }}" class="btn btn-primary btn-lg" id="hero-report-btn">
+                    <span>+</span> Report an Item
+                </a>
+                <a href="{{ url_for('items') }}" class="btn btn-outline btn-lg" id="hero-browse-btn">
+                    Browse All Cataloged Items
+                </a>
+            </div>
+        </div>
+
+        <!-- Quick Stats Overview -->
+        <div class="hero-stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon bg-blue">📦</div>
+                <div class="stat-number">{{ stats.verified_items }}</div>
+                <div class="stat-label">Verified Listings</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-green">🤝</div>
+                <div class="stat-number">{{ stats.returned_items }}</div>
+                <div class="stat-label">Items Returned</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-purple">🛡️</div>
+                <div class="stat-number">{{ stats.active_claims }}</div>
+                <div class="stat-label">Claims Verified</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Demo Credentials Notice -->
+<section class="demo-credentials-banner">
+    <div class="demo-card">
+        <div class="demo-header">
+            <span class="demo-icon">🔑</span>
+            <div>
+                <h3>Quick Test &amp; Evaluation Accounts</h3>
+                <p>Pre-configured demo credentials for academic project evaluation and grading.</p>
+            </div>
+        </div>
+        <div class="demo-grid">
+            <div class="demo-item">
+                <span class="demo-role student-role">Student Account</span>
+                <p><strong>Email:</strong> <code>rahul@campus.edu</code></p>
+                <p><strong>Password:</strong> <code>Student@123</code></p>
+            </div>
+            <div class="demo-item">
+                <span class="demo-role admin-role">Admin Account</span>
+                <p><strong>Email:</strong> <code>admin@campus.edu</code></p>
+                <p><strong>Password:</strong> <code>Admin@123</code></p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Workflow Steps -->
+<section class="workflow-section">
+    <div class="section-container">
+        <div class="section-header">
+            <span class="section-tag">System Workflow</span>
+            <h2>How the Campus Portal Operates</h2>
+            <p>From initial report to administrative verification and secure owner handover.</p>
+        </div>
+
+        <div class="workflow-cards">
+            <div class="step-card">
+                <div class="step-num">01</div>
+                <h3>1. Report Belonging</h3>
+                <p>Submit item details including photo/description, category, date, and specific campus location.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-num">02</div>
+                <h3>2. Admin Verification</h3>
+                <p>Campus security reviews reports to prevent fraudulent spam and ensure valid community listings.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-num">03</div>
+                <h3>3. Search &amp; Claim</h3>
+                <p>Students browse verified items and submit claims by describing unique identifying features.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-num">04</div>
+                <h3>4. Safe Handover</h3>
+                <p>Once claims are approved by administrators, items are securely handed over and marked returned.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Recent Items Showcase -->
+<section class="recent-items-section">
+    <div class="section-container">
+        <div class="section-header-row">
+            <div>
+                <span class="section-tag">Campus Feed</span>
+                <h2>Recently Verified Campus Belongings</h2>
+                <p>Browse newly verified items reported by students and faculty across campus.</p>
+            </div>
+            <a href="{{ url_for('items') }}" class="btn btn-outline" id="view-all-items-btn">View All Items &rarr;</a>
+        </div>
+
+        {% if recent_items %}
+            <div class="items-grid">
+                {% for item in recent_items %}
+                    <div class="item-card">
+                        <div class="item-card-header">
+                            <span class="badge {% if item.item_type == 'Lost' %}badge-lost{% else %}badge-found{% endif %}">
+                                {{ item.item_type }}
+                            </span>
+                            <span class="badge badge-category">{{ item.category }}</span>
+                            <span class="badge badge-status-{{ item.status|lower }}">{{ item.status }}</span>
+                        </div>
+                        <div class="item-card-body">
+                            <h3 class="item-title">
+                                <a href="{{ url_for('item_details', item_id=item.id) }}">{{ item.title }}</a>
+                            </h3>
+                            <p class="item-desc">{{ item.description|truncate(110) }}</p>
+                            <div class="item-meta">
+                                <div class="meta-row">
+                                    <span class="meta-icon">📍</span>
+                                    <span class="meta-text">{{ item.location }}</span>
+                                </div>
+                                <div class="meta-row">
+                                    <span class="meta-icon">📅</span>
+                                    <span class="meta-text">{{ item.date }}</span>
+                                </div>
+                                <div class="meta-row">
+                                    <span class="meta-icon">👤</span>
+                                    <span class="meta-text">Reported by {{ item.reporter_name }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="item-card-footer">
+                            <a href="{{ url_for('item_details', item_id=item.id) }}" class="btn btn-outline btn-block">
+                                View Details &amp; Claim
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">📭</div>
+                <h3>No verified items cataloged yet</h3>
+                <p>Be the first to report a lost or found belonging to help your fellow students.</p>
+                <a href="{{ url_for('report_item') }}" class="btn btn-primary">Report an Item</a>
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

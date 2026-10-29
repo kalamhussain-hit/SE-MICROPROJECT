@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}{{ item.title }} - Item Details{% endblock %}
+
+{% block content %}
+<div class="details-page-wrapper">
+    <div class="breadcrumb-nav">
+        <a href="{{ url_for('items') }}">&larr; Back to Browse Items</a>
+    </div>
+
+    <div class="details-card">
+        <div class="details-card-header">
+            <div class="badges-row">
+                <span class="badge {% if item.item_type == 'Lost' %}badge-lost{% else %}badge-found{% endif %}">
+                    {{ item.item_type }} Belonging
+                </span>
+                <span class="badge badge-category">{{ item.category }}</span>
+                <span class="badge badge-status-{{ item.status|lower }}">{{ item.status }}</span>
+                <span class="item-id-badge">ID: #{{ item.id }}</span>
+            </div>
+            <h1 class="details-title">{{ item.title }}</h1>
+        </div>
+
+        <!-- Metadata Grid -->
+        <div class="metadata-grid">
+            <div class="meta-box">
+                <span class="meta-label">Campus Location</span>
+                <span class="meta-value">📍 {{ item.location }}</span>
+            </div>
+            <div class="meta-box">
+                <span class="meta-label">Date Discovered / Misplaced</span>
+                <span class="meta-value">📅 {{ item.date }}</span>
+            </div>
+            <div class="meta-box">
+                <span class="meta-label">Reported By</span>
+                <span class="meta-value">👤 {{ item.reporter_name }}</span>
+            </div>
+            <div class="meta-box">
+                <span class="meta-label">Cataloged On</span>
+                <span class="meta-value">⏱️ {{ item.created_at }}</span>
+            </div>
+        </div>
+
+        <!-- Description Section -->
+        <div class="description-section">
+            <h3>Item Description &amp; Identifying Details</h3>
+            <div class="description-body">
+                <p>{{ item.description }}</p>
+            </div>
+        </div>
+
+        <!-- Claim & Action Box -->
+        <div class="action-callout-box">
+            {% if item.status == 'Returned' %}
+                <div class="status-banner banner-success">
+                    <span class="banner-icon">🎉</span>
+                    <div>
+                        <h4>This item has been returned</h4>
+                        <p>This belonging was successfully verified and returned to its rightful owner.</p>
+                    </div>
+                </div>
+            {% elif item.status == 'Rejected' %}
+                <div class="status-banner banner-danger">
+                    <span class="banner-icon">⚠️</span>
+                    <div>
+                        <h4>Report Rejected by Administration</h4>
+                        <p>This report did not meet verification guidelines and is not open for claims.</p>
+                    </div>
+                </div>
+            {% elif item.status == 'Pending' %}
+                <div class="status-banner banner-warning">
+                    <span class="banner-icon">⏳</span>
+                    <div>
+                        <h4>Pending Administrative Verification</h4>
+                        <p>This item has been submitted and is currently awaiting approval by campus administration before claims can be processed.</p>
+                    </div>
+                </div>
+            {% else %}
+                <!-- Status is Verified -->
+                {% if session.get('user_id') %}
+                    {% if session.get('user_id') == item.reported_by %}
+                        <div class="status-banner banner-info">
+                            <span class="banner-icon">ℹ️</span>
+                            <div>
+                                <h4>You Reported This Item</h4>
+                                <p>You are the original reporter of this listing. You can track any verification updates or claims from your student dashboard.</p>
+                            </div>
+                        </div>
+                    {% elif user_has_claimed %}
+                        <div class="status-banner banner-success">
+                            <span class="banner-icon">✓</span>
+                            <div>
+                                <h4>Claim Submitted</h4>
+                                <p>You have already submitted an ownership verification claim for this item. Monitor your student dashboard for approval.</p>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="claim-prompt-content">
+                            <div>
+                                <h4>Is this personal belonging yours?</h4>
+                                <p>Submit an ownership claim with identifying proof or specific details to verify with campus security.</p>
+                            </div>
+                            <a href="{{ url_for('submit_claim', item_id=item.id) }}" class="btn btn-primary btn-lg" id="claim-item-btn">
+                                Submit Ownership Claim
+                            </a>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="claim-prompt-content">
+                        <div>
+                            <h4>Is this item yours?</h4>
+                            <p>Please log in or register a verified student account to submit an ownership claim.</p>
+                        </div>
+                        <a href="{{ url_for('login', next=url_for('item_details', item_id=item.id)) }}" class="btn btn-primary">
+                            Log In to Claim
+                        </a>
+                    </div>
+                {% endif %}
+            {% endif %}
+        </div>
+
+        <!-- Admin / Reporter Claims Section -->
+        {% if claims %}
+            <div class="item-claims-section">
+                <h3>Submitted Ownership Claims ({{ claims|length }})</h3>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Claim ID</th>
+                                <th>Claimant Name</th>
+                                <th>Contact Email</th>
+                                <th>Claim Proof Description</th>
+                                <th>Status</th>
+                                <th>Date Submitted</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for claim in claims %}
+                                <tr>
+                                    <td><code>#CLM-{{ claim.id }}</code></td>
+                                    <td><strong>{{ claim.claimant_name }}</strong></td>
+                                    <td><a href="mailto:{{ claim.claimant_email }}">{{ claim.claimant_email }}</a></td>
+                                    <td>{{ claim.message }}</td>
+                                    <td>
+                                        <span class="badge badge-status-{{ claim.status|lower }}">{{ claim.status }}</span>
+                                    </td>
+                                    <td>{{ claim.created_at }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

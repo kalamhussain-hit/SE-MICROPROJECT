@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}My Dashboard - Smart Lost & Found Portal{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrapper">
+    <div class="dashboard-header">
+        <div class="header-content">
+            <h1>Student Dashboard</h1>
+            <p>Welcome, <strong>{{ session.get('user_name') }}</strong> ({{ session.get('user_email') }}). Track your reported items and verification claims.</p>
+        </div>
+        <div class="header-actions">
+            <a href="{{ url_for('report_item') }}" class="btn btn-primary" id="dash-report-btn">
+                <span>+</span> Report New Item
+            </a>
+            <a href="{{ url_for('items') }}" class="btn btn-outline" id="dash-browse-btn">
+                Browse Items
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Metrics -->
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-icon bg-blue">📋</div>
+            <div class="metric-info">
+                <span class="metric-value">{{ stats.total_reported }}</span>
+                <span class="metric-title">Items Reported</span>
+            </div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon bg-green">✓</div>
+            <div class="metric-info">
+                <span class="metric-value">{{ stats.verified_reported }}</span>
+                <span class="metric-title">Verified by Admin</span>
+            </div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon bg-purple">📑</div>
+            <div class="metric-info">
+                <span class="metric-value">{{ stats.total_claims }}</span>
+                <span class="metric-title">Claims Submitted</span>
+            </div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon bg-amber">🎉</div>
+            <div class="metric-info">
+                <span class="metric-value">{{ stats.approved_claims }}</span>
+                <span class="metric-title">Approved Claims</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 1: My Reported Items -->
+    <div class="dashboard-section">
+        <div class="section-title-row">
+            <h2>My Reported Items</h2>
+            <span class="section-count">{{ my_items|length }} record(s)</span>
+        </div>
+
+        {% if my_items %}
+            <div class="table-responsive">
+                <table class="data-table" id="myItemsTable">
+                    <thead>
+                        <tr>
+                            <th>Item ID</th>
+                            <th>Item Title</th>
+                            <th>Type</th>
+                            <th>Category</th>
+                            <th>Location</th>
+                            <th>Report Date</th>
+                            <th>Admin Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in my_items %}
+                            <tr>
+                                <td><code>#{{ item.id }}</code></td>
+                                <td>
+                                    <strong>{{ item.title }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge {% if item.item_type == 'Lost' %}badge-lost{% else %}badge-found{% endif %}">
+                                        {{ item.item_type }}
+                                    </span>
+                                </td>
+                                <td>{{ item.category }}</td>
+                                <td>{{ item.location }}</td>
+                                <td>{{ item.date }}</td>
+                                <td>
+                                    <span class="badge badge-status-{{ item.status|lower }}">
+                                        {{ item.status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('item_details', item_id=item.id) }}" class="btn btn-outline-sm">
+                                        View Details
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state-box">
+                <p>You have not reported any lost or found items yet.</p>
+                <a href="{{ url_for('report_item') }}" class="btn btn-primary btn-sm">Report Your First Item</a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Section 2: My Ownership Claims -->
+    <div class="dashboard-section">
+        <div class="section-title-row">
+            <h2>My Ownership Claims</h2>
+            <span class="section-count">{{ my_claims|length }} claim(s)</span>
+        </div>
+
+        {% if my_claims %}
+            <div class="table-responsive">
+                <table class="data-table" id="myClaimsTable">
+                    <thead>
+                        <tr>
+                            <th>Claim ID</th>
+                            <th>Target Item</th>
+                            <th>Item Type</th>
+                            <th>Location Found</th>
+                            <th>Proof Message</th>
+                            <th>Claim Status</th>
+                            <th>Submission Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for claim in my_claims %}
+                            <tr>
+                                <td><code>#CLM-{{ claim.claim_id }}</code></td>
+                                <td>
+                                    <strong>{{ claim.item_title }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge {% if claim.item_type == 'Lost' %}badge-lost{% else %}badge-found{% endif %}">
+                                        {{ claim.item_type }}
+                                    </span>
+                                </td>
+                                <td>{{ claim.location }}</td>
+                                <td>
+                                    <span class="claim-message-preview" title="{{ claim.message }}">
+                                        {{ claim.message|truncate(45) }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge badge-status-{{ claim.claim_status|lower }}">
+                                        {{ claim.claim_status }}
+                                    </span>
+                                </td>
+                                <td>{{ claim.claim_date }}</td>
+                                <td>
+                                    <a href="{{ url_for('item_details', item_id=claim.item_id) }}" class="btn btn-outline-sm">
+                                        View Item
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state-box">
+                <p>You have not submitted any ownership claims.</p>
+                <a href="{{ url_for('items') }}" class="btn btn-outline btn-sm">Browse Cataloged Items</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

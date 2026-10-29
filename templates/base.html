@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Smart Lost and Found Portal for Campus - A centralized system to report, search, verify and claim lost or found belongings.">
+    <title>{% block title %}Smart Lost & Found Portal{% endblock %} | Campus Portal</title>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Top Navigation -->
+    <header class="navbar-wrapper">
+        <div class="nav-container">
+            <a href="{{ url_for('index') }}" class="brand-logo" id="nav-brand-logo">
+                <span class="logo-icon">🔍</span>
+                <span class="brand-text">Campus<strong>Lost&Found</strong></span>
+            </a>
+
+            <!-- Mobile Navigation Toggle -->
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+
+            <!-- Navigation Links -->
+            <nav class="nav-menu" id="navMenu">
+                <ul class="nav-links">
+                    <li><a href="{{ url_for('index') }}" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">Home</a></li>
+                    <li><a href="{{ url_for('items') }}" class="nav-link {% if request.endpoint == 'items' %}active{% endif %}">Browse Items</a></li>
+                    {% if session.get('user_id') %}
+                        <li><a href="{{ url_for('report_item') }}" class="nav-link {% if request.endpoint == 'report_item' %}active{% endif %}">Report Item</a></li>
+                        <li><a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">My Dashboard</a></li>
+                        {% if session.get('user_role') == 'admin' %}
+                            <li><a href="{{ url_for('admin_dashboard') }}" class="nav-link admin-pill {% if request.endpoint == 'admin_dashboard' %}active{% endif %}">Admin Portal</a></li>
+                        {% endif %}
+                    {% endif %}
+                </ul>
+
+                <div class="nav-actions">
+                    {% if session.get('user_id') %}
+                        <div class="user-profile-badge">
+                            <span class="avatar-circle">{{ session.get('user_name', 'U')[0]|upper }}</span>
+                            <div class="user-info">
+                                <span class="user-name">{{ session.get('user_name') }}</span>
+                                <span class="user-role">{{ session.get('user_role')|capitalize }}</span>
+                            </div>
+                        </div>
+                        <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-sm" id="nav-logout-btn">Logout</a>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="btn btn-outline btn-sm" id="nav-login-btn">Log In</a>
+                        <a href="{{ url_for('register') }}" class="btn btn-primary btn-sm" id="nav-register-btn">Register</a>
+                    {% endif %}
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Flash Notifications -->
+    <div class="flash-container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} fade-in" role="alert">
+                        <span class="alert-icon">
+                            {% if category == 'success' %}✓{% elif category == 'danger' %}✕{% elif category == 'warning' %}⚠{% else %}ℹ{% endif %}
+                        </span>
+                        <div class="alert-content">{{ message }}</div>
+                        <button type="button" class="alert-close" onclick="this.parentElement.remove()" aria-label="Close notification">&times;</button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Main Page Content -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="portal-footer">
+        <div class="footer-container">
+            <div class="footer-col">
+                <div class="footer-logo">
+                    <span>🔍</span>
+                    <span>Campus<strong>Lost&Found</strong></span>
+                </div>
+                <p class="footer-desc">
+                    Centralized, verified lost-and-found management portal for campus students, faculty, and administrative departments.
+                </p>
+            </div>
+            <div class="footer-col">
+                <h4>Quick Navigation</h4>
+                <ul>
+                    <li><a href="{{ url_for('index') }}">Home</a></li>
+                    <li><a href="{{ url_for('items') }}">Browse All Items</a></li>
+                    <li><a href="{{ url_for('report_item') }}">Report Lost/Found</a></li>
+                    <li><a href="{{ url_for('login') }}">Account Login</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>System Verification</h4>
+                <p class="security-note">
+                    All reports undergo administrative review before verification to prevent fraudulent claims.
+                </p>
+                <div class="badge-list">
+                    <span class="badge badge-success">Role-Based Access</span>
+                    <span class="badge badge-info">SHA-256 Hashing</span>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; {{ now.year }} Smart Lost &amp; Found Portal for Campus &bull; Software Engineering Microproject</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

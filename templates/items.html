@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Browse Items - Smart Lost & Found Portal{% endblock %}
+
+{% block content %}
+<div class="items-page-wrapper">
+    <div class="page-title-banner">
+        <div class="banner-content">
+            <h1>Browse &amp; Search Cataloged Belongings</h1>
+            <p>Search across verified campus reports for lost or discovered articles.</p>
+        </div>
+    </div>
+
+    <!-- Filters & Search Form -->
+    <div class="filter-panel-card">
+        <form action="{{ url_for('items') }}" method="GET" class="filter-form" id="searchFilterForm">
+            <div class="filter-grid">
+                <!-- Search Keyword -->
+                <div class="filter-group keyword-group">
+                    <label for="filter-query">Search Keyword</label>
+                    <div class="input-with-icon">
+                        <span class="input-icon">🔍</span>
+                        <input type="text" id="filter-query" name="q" value="{{ query }}" placeholder="Search by title, location, or details...">
+                    </div>
+                </div>
+
+                <!-- Category -->
+                <div class="filter-group">
+                    <label for="filter-category">Category</label>
+                    <select id="filter-category" name="category">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Item Type -->
+                <div class="filter-group">
+                    <label for="filter-type">Item Type</label>
+                    <select id="filter-type" name="type">
+                        <option value="">All Types (Lost &amp; Found)</option>
+                        <option value="Lost" {% if selected_type == 'Lost' %}selected{% endif %}>Lost Items Only</option>
+                        <option value="Found" {% if selected_type == 'Found' %}selected{% endif %}>Found Items Only</option>
+                    </select>
+                </div>
+
+                <!-- Status (if Admin or filterable) -->
+                {% if session.get('user_role') == 'admin' %}
+                    <div class="filter-group">
+                        <label for="filter-status">Status (Admin)</label>
+                        <select id="filter-status" name="status">
+                            <option value="">All Statuses</option>
+                            <option value="Pending" {% if selected_status == 'Pending' %}selected{% endif %}>Pending</option>
+                            <option value="Verified" {% if selected_status == 'Verified' %}selected{% endif %}>Verified</option>
+                            <option value="Rejected" {% if selected_status == 'Rejected' %}selected{% endif %}>Rejected</option>
+                            <option value="Returned" {% if selected_status == 'Returned' %}selected{% endif %}>Returned</option>
+                        </select>
+                    </div>
+                {% endif %}
+
+                <!-- Action Buttons -->
+                <div class="filter-actions-group">
+                    <button type="submit" class="btn btn-primary" id="apply-filter-btn">Filter</button>
+                    <a href="{{ url_for('items') }}" class="btn btn-outline" id="reset-filter-btn">Reset</a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Active Filters Summary & Count -->
+    <div class="results-header-row">
+        <span class="results-count">Showing <strong>{{ items|length }}</strong> item(s)</span>
+        {% if query or selected_category or selected_type %}
+            <div class="active-tags">
+                <span class="active-tag-label">Active filters:</span>
+                {% if query %}<span class="filter-tag">Keyword: "{{ query }}"</span>{% endif %}
+                {% if selected_category %}<span class="filter-tag">Category: {{ selected_category }}</span>{% endif %}
+                {% if selected_type %}<span class="filter-tag">Type: {{ selected_type }}</span>{% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Items Grid -->
+    {% if items %}
+        <div class="items-grid">
+            {% for item in items %}
+                <div class="item-card">
+                    <div class="item-card-header">
+                        <span class="badge {% if item.item_type == 'Lost' %}badge-lost{% else %}badge-found{% endif %}">
+                            {{ item.item_type }}
+                        </span>
+                        <span class="badge badge-category">{{ item.category }}</span>
+                        <span class="badge badge-status-{{ item.status|lower }}">{{ item.status }}</span>
+                    </div>
+
+                    <div class="item-card-body">
+                        <h3 class="item-title">
+                            <a href="{{ url_for('item_details', item_id=item.id) }}">{{ item.title }}</a>
+                        </h3>
+                        <p class="item-desc">{{ item.description|truncate(120) }}</p>
+                        
+                        <div class="item-meta">
+                            <div class="meta-row">
+                                <span class="meta-icon">📍</span>
+                                <span class="meta-text">{{ item.location }}</span>
+                            </div>
+                            <div class="meta-row">
+                                <span class="meta-icon">📅</span>
+                                <span class="meta-text">{{ item.date }}</span>
+                            </div>
+                            <div class="meta-row">
+                                <span class="meta-icon">👤</span>
+                                <span class="meta-text">Reported by {{ item.reporter_name }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="item-card-footer">
+                        <a href="{{ url_for('item_details', item_id=item.id) }}" class="btn btn-outline btn-block">
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">🔍</div>
+            <h3>No matching items found</h3>
+            <p>Try refining your search terms or clearing filters to see more results.</p>
+            <a href="{{ url_for('items') }}" class="btn btn-primary">Clear All Filters</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

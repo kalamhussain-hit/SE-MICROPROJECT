@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+
+{% block title %}Administrator Control Center - Smart Lost & Found Portal{% endblock %}
+
+{% block content %}
+<div class="admin-dashboard-wrapper">
+    <!-- Admin Top Banner -->
+    <div class="admin-header-row">
+        <div>
+            <span class="badge badge-admin-tag">🛡️ Administrative Center</span>
+            <h1>Campus Lost &amp; Found Control Panel</h1>
+            <p>Review student reports, verify catalog submissions, evaluate ownership claims, and track item returns.</p>
+        </div>
+        <div class="admin-timestamp">
+            <span>Logged in as <strong>{{ session.get('user_name') }}</strong> ({{ session.get('user_email') }})</span>
+        </div>
+    </div>
+
+    <!-- Admin Metric Cards -->
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-icon bg-blue">📦</div>
+            <div class="metric-info">
+                <span class="metric-value">{{ stats.total_items }}</span>
+                <span class="metric-title">Total Items Cataloged</span>
+            </div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon bg-amber">⏳</div>
+            <div class="metric-info">
+                <span class="metric-value">{{ stats.pending_items }}</span>
+                <span class="metric-title">Reports Pending Verification</span>
+            </div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon bg-green">✓</div>
+            <div class="metric-info">
+                <span class="metric-value">{{ stats.verified_items }}</span>
+                <span class="metric-title">Verified Items</span>
+            </div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon bg-purple">🤝</div>
+            <div class="metric-info">
+                <span class="metric-value">{{ stats.returned_items }}</span>
+                <span class="metric-title">Items Returned</span>
+            </div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon bg-red">📑</div>
+            <div class="metric-info">
+                <span class="metric-value">{{ stats.pending_claims }}</span>
+                <span class="metric-title">Claims Pending Review</span>
+            </div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon bg-slate">👥</div>
+            <div class="metric-info">
+                <span class="metric-value">{{ stats.total_users }}</span>
+                <span class="metric-title">Registered Users</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Tabs -->
+    <div class="admin-tabs-nav">
+        <button class="tab-btn active" onclick="switchAdminTab('items-tab', this)">
+            Reported Items ({{ items|length }})
+        </button>
+        <button class="tab-btn" onclick="switchAdminTab('claims-tab', this)">
+            Ownership Claims ({{ claims|length }})
+        </button>
+        <button class="tab-btn" onclick="switchAdminTab('users-tab', this)">
+            Registered Accounts ({{ users|length }})
+        </button>
+    </div>
+
+    <!-- TAB 1: Reported Items Management -->
+    <div id="items-tab" class="admin-tab-content active">
+        <div class="section-title-row">
+            <h2>Campus Item Reports</h2>
+            <div class="quick-filter-group">
+                <label for="adminItemFilter">Filter Status:</label>
+                <select id="adminItemFilter" onchange="filterAdminItemsTable(this.value)">
+                    <option value="ALL">All Statuses</option>
+                    <option value="Pending">Pending Verification</option>
+                    <option value="Verified">Verified Only</option>
+                    <option value="Returned">Returned Only</option>
+                    <option value="Rejected">Rejected Only</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table" id="adminItemsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Item Details</th>
+                        <th>Type</th>
+                        <th>Category</th>
+                        <th>Location &amp; Date</th>
+                        <th>Reporter</th>
+                        <th>Status</th>
+                        <th class="actions-col">Verification Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                        <tr data-status="{{ item.status }}">
+                            <td><code>#{{ item.id }}</code></td>
+                            <td>
+                                <strong>{{ item.title }}</strong>
+                                <p class="table-subtext" title="{{ item.description }}">{{ item.description|truncate(70) }}</p>
+                            </td>
+                            <td>
+                                <span class="badge {% if item.item_type == 'Lost' %}badge-lost{% else %}badge-found{% endif %}">
+                                    {{ item.item_type }}
+                                </span>
+                            </td>
+                            <td>{{ item.category }}</td>
+                            <td>
+                                <div>📍 {{ item.location }}</div>
+                                <small class="text-muted">📅 {{ item.date }}</small>
+                            </td>
+                            <td>
+                                <div>{{ item.reporter_name }}</div>
+                                <small class="text-muted">{{ item.reporter_email }}</small>
+                            </td>
+                            <td>
+                                <span class="badge badge-status-{{ item.status|lower }}">{{ item.status }}</span>
+                            </td>
+                            <td>
+                                <div class="action-buttons-inline">
+                                    {% if item.status == 'Pending' %}
+                                        <form action="{{ url_for('update_item_status', item_id=item.id) }}" method="POST" style="display:inline;">
+                                            <input type="hidden" name="status" value="Verified">
+                                            <button type="submit" class="btn btn-success-sm" title="Verify this report">
+                                                ✓ Verify
+                                            </button>
+                                        </form>
+                                        <form action="{{ url_for('update_item_status', item_id=item.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to reject this item report?');">
+                                            <input type="hidden" name="status" value="Rejected">
+                                            <button type="submit" class="btn btn-danger-sm" title="Reject invalid report">
+                                                ✕ Reject
+                                            </button>
+                                        </form>
+                                    {% elif item.status == 'Verified' %}
+                                        <form action="{{ url_for('update_item_status', item_id=item.id) }}" method="POST" style="display:inline;">
+                                            <input type="hidden" name="status" value="Returned">
+                                            <button type="submit" class="btn btn-purple-sm" title="Mark item as returned to owner">
+                                                🤝 Mark Returned
+                                            </button>
+                                        </form>
+                                        <form action="{{ url_for('update_item_status', item_id=item.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Reject this report?');">
+                                            <input type="hidden" name="status" value="Rejected">
+                                            <button type="submit" class="btn btn-danger-sm" title="Reject report">
+                                                ✕ Reject
+                                            </button>
+                                        </form>
+                                    {% elif item.status == 'Returned' %}
+                                        <span class="text-muted small">Returned to owner</span>
+                                    {% elif item.status == 'Rejected' %}
+                                        <form action="{{ url_for('update_item_status', item_id=item.id) }}" method="POST" style="display:inline;">
+                                            <input type="hidden" name="status" value="Verified">
+                                            <button type="submit" class="btn btn-outline-sm" title="Re-verify report">
+                                                Re-verify
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                    <a href="{{ url_for('item_details', item_id=item.id) }}" class="btn btn-outline-sm" target="_blank" title="View details in new tab">
+                                        View
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- TAB 2: Ownership Claims Review -->
+    <div id="claims-tab" class="admin-tab-content">
+        <div class="section-title-row">
+            <h2>Ownership Verification Claims</h2>
+            <p>Examine proof submitted by claimants to authenticate ownership before handing over items.</p>
+        </div>
+
+        {% if claims %}
+            <div class="table-responsive">
+                <table class="data-table" id="adminClaimsTable">
+                    <thead>
+                        <tr>
+                            <th>Claim ID</th>
+                            <th>Target Item</th>
+                            <th>Claimant Details</th>
+                            <th>Proof Message / Evidence</th>
+                            <th>Claim Status</th>
+                            <th>Submission Date</th>
+                            <th class="actions-col">Review Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for claim in claims %}
+                            <tr>
+                                <td><code>#CLM-{{ claim.id }}</code></td>
+                                <td>
+                                    <strong>{{ claim.item_title }}</strong>
+                                    <div>
+                                        <span class="badge {% if claim.item_type == 'Lost' %}badge-lost{% else %}badge-found{% endif %}">
+                                            {{ claim.item_type }}
+                                        </span>
+                                        <span class="badge badge-category">{{ claim.category }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <strong>{{ claim.claimant_name }}</strong>
+                                    <div class="text-muted small">{{ claim.claimant_email }}</div>
+                                </td>
+                                <td>
+                                    <div class="claim-proof-text" title="{{ claim.message }}">
+                                        {{ claim.message }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge badge-status-{{ claim.status|lower }}">{{ claim.status }}</span>
+                                </td>
+                                <td>{{ claim.created_at }}</td>
+                                <td>
+                                    {% if claim.status == 'Pending' %}
+                                        <div class="action-buttons-inline">
+                                            <form action="{{ url_for('update_claim_status', claim_id=claim.id) }}" method="POST" style="display:inline;">
+                                                <input type="hidden" name="status" value="Approved">
+                                                <input type="hidden" name="mark_returned" value="yes">
+                                                <button type="submit" class="btn btn-success-sm" title="Approve claim and mark item returned">
+                                                    ✓ Approve &amp; Return
+                                                </button>
+                                            </form>
+                                            <form action="{{ url_for('update_claim_status', claim_id=claim.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Reject this claim?');">
+                                                <input type="hidden" name="status" value="Rejected">
+                                                <button type="submit" class="btn btn-danger-sm" title="Reject claim">
+                                                    ✕ Reject
+                                                </button>
+                                            </form>
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted small">Decided ({{ claim.status }})</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state-box">
+                <p>No ownership claims have been submitted yet.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- TAB 3: Registered Accounts -->
+    <div id="users-tab" class="admin-tab-content">
+        <div class="section-title-row">
+            <h2>Registered Campus Accounts</h2>
+            <p>Complete directory of registered campus students and administrators.</p>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table" id="adminUsersTable">
+                <thead>
+                    <tr>
+                        <th>User ID</th>
+                        <th>Full Name</th>
+                        <th>Email Address</th>
+                        <th>Role</th>
+                        <th>Registration Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                        <tr>
+                            <td><code>#USR-{{ user.id }}</code></td>
+                            <td><strong>{{ user.name }}</strong></td>
+                            <td>{{ user.email }}</td>
+                            <td>
+                                <span class="badge {% if user.role == 'admin' %}badge-admin{% else %}badge-student{% endif %}">
+                                    {{ user.role|upper }}
+                                </span>
+                            </td>
+                            <td>{{ user.created_at }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function switchAdminTab(tabId, btn) {
+    document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.admin-tabs-nav .tab-btn').forEach(el => el.classList.remove('active'));
+    
+    document.getElementById(tabId).classList.add('active');
+    btn.classList.add('active');
+}
+
+function filterAdminItemsTable(status) {
+    const rows = document.querySelectorAll('#adminItemsTable tbody tr');
+    rows.forEach(row => {
+        if (status === 'ALL' || row.dataset.status === status) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Log In - Smart Lost & Found Portal{% endblock %}
+
+{% block content %}
+<div class="auth-page-wrapper">
+    <div class="auth-card">
+        <div class="auth-header">
+            <span class="auth-icon">🔐</span>
+            <h2>Portal Sign In</h2>
+            <p>Access your campus lost &amp; found account</p>
+        </div>
+
+        <form action="{{ url_for('login') }}{% if request.args.get('next') %}?next={{ request.args.get('next') }}{% endif %}" method="POST" class="auth-form" id="loginForm">
+            <div class="form-group">
+                <label for="login-email">Campus Email Address</label>
+                <div class="input-with-icon">
+                    <span class="input-icon">✉️</span>
+                    <input type="email" id="login-email" name="email" value="{{ email or '' }}" placeholder="student@campus.edu" required autofocus>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="login-password">Password</label>
+                <div class="input-with-icon">
+                    <span class="input-icon">🔒</span>
+                    <input type="password" id="login-password" name="password" placeholder="••••••••" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block btn-lg" id="login-submit-btn">
+                Sign In to Portal
+            </button>
+        </form>
+
+        <!-- Quick Demo Fill Buttons -->
+        <div class="demo-fill-box">
+            <span class="demo-fill-title">Quick Demo Login:</span>
+            <div class="demo-buttons-group">
+                <button type="button" class="btn btn-outline-sm" onclick="fillCredentials('rahul@campus.edu', 'Student@123')">
+                    Fill Student (Rahul)
+                </button>
+                <button type="button" class="btn btn-outline-sm" onclick="fillCredentials('admin@campus.edu', 'Admin@123')">
+                    Fill Administrator
+                </button>
+            </div>
+        </div>
+
+        <div class="auth-footer">
+            <p>Don't have an account yet? <a href="{{ url_for('register') }}">Create an account</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function fillCredentials(email, pwd) {
+    document.getElementById('login-email').value = email;
+    document.getElementById('login-password').value = pwd;
+}
+</script>
+{% endblock %}
