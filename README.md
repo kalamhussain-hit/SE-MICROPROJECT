@@ -53,9 +53,9 @@ Without a centralized and structured system:
 
 ## 🌟 Novelty: Smart Lost–Found Matching
 
-A key innovation in this portal is the **Smart Lost–Found Matching Engine** ([`matching.py`](file:///c:/Users/Kalam/OneDrive/Desktop/SE-Micrporject/matching.py)), which automatically correlates reported lost belongings with newly discovered found items in real-time.
+The system introduces multi-attribute matching between lost and found item reports and integrates this matching with administrative verification and proof-based claim processing.
 
-Instead of relying solely on exact keyword searches, the system performs **deterministic, explainable multi-attribute scoring** using calibrated weights:
+The **Smart Lost–Found Matching Engine** ([`matching.py`](file:///c:/Users/Kalam/OneDrive/Desktop/SE-Micrporject/matching.py)) automatically correlates reported lost belongings with newly discovered found items in real-time. Instead of relying solely on exact keyword searches, the system performs **deterministic, explainable multi-attribute scoring** using calibrated weights:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
